@@ -1,0 +1,39 @@
+---
+Multistack template
+---
+
+SET Regions = "5"
+
+STACK MakeMoreEIPs (string Power)
+{
+	MAKE MakeTwoElasticIPs M1 (WoofName = Power)
+	MAKE MakeTwoElasticIPs M2 (WoofName = "")
+	MAKE MakeTwoElasticIPs M3 (WoofName = Power)
+	MAKE MakeTwoElasticIPs M4 (WoofName = Power)
+
+	RETURN (M2IP = M2.TheIP)
+}
+
+STACK MakeTwoElasticIPs (string WoofName)
+{
+	MAKE MakeAnElasticIP Woof (InstanceId = WoofName)
+	MAKE MakeAnElasticIP Meow (InstanceId = "Goodbye")
+	MAKE MakeAnother Cat (InstanceId = "Nyan")
+	MAKE MakeAnother Cat2 (InstanceId = WoofName)
+
+	RETURN (TheIP = Woof.Result)
+}
+
+STACK MakeAnElasticIP (string InstanceId)
+{
+	MAKE EIP ControlServerIP (InstanceId = Regions)
+
+	RETURN (Result = ControlServerIP)
+}
+
+STACK MakeAnother (string InstanceId)
+{
+	MAKE EIP ControlAnotherServerIP (InstanceId = InstanceId)
+
+	RETURN (Result = ControlServerIP)
+}

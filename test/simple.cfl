@@ -1,0 +1,12 @@
+---
+Simple template
+---
+
+SET Regions = 5
+
+STACK MakeAnElasticIP (string Name, string InstanceId)
+{
+	MAKE EIP ControlServerIP (InstanceId = InstanceId)
+
+	RETURN (Result = ControlServerIP)
+}

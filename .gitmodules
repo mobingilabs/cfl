@@ -1,0 +1,6 @@
+[submodule "coco-r-cpp"]
+	path = coco-r-cpp
+	url = https://github.com/davidsiaw/coco-r-cpp
+[submodule "picojson"]
+	path = picojson
+	url = https://github.com/davidsiaw/picojson

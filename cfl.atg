@@ -1,0 +1,252 @@
+#include <string>
+#include <map>
+#include <vector>
+#include <memory>
+
+#include "NumberLiteral.h"
+#include "StringLiteral.h"
+#include "ArrayLiteral.h"
+#include "RecordLiteral.h"
+#include "RecordField.h"
+#include "SymbolReference.h"
+#include "FunctionCall.h"
+#include "MemberCall.h"
+
+#include "Variable.h"
+#include "Stack.h"
+#include "Resource.h"
+
+typedef std::shared_ptr<Expression> ExpressionPtr;
+typedef std::shared_ptr<RecordField> RecordFieldPtr;
+typedef std::vector< std::shared_ptr<Expression> > ParameterList;
+
+typedef std::shared_ptr<Variable> VariablePtr;
+typedef std::shared_ptr<Stack> StackPtr;
+typedef std::shared_ptr<Resource> ResourcePtr;
+
+COMPILER CFL
+
+	std::wstring description = L"Created using git@github.com:davidsiaw/cfl. Since this is generated code, your changes will likely be replaced.";
+
+	std::vector<VariablePtr> variables;
+	std::vector<StackPtr> stacks;
+
+CHARACTERS
+	bigletter = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".
+	letter    = "abcdefghijklmnopqrstuvwxyz".
+	digit     = "0123456789".
+	cr        = '\r'.
+	lf        = '\n'.
+	tab       = '\t'.
+	underscore= '_'.
+
+	stringCh  = ANY - '"' - '\\' - cr - lf.
+	charCh    = ANY - '\'' - '\\' - cr - lf.
+	printable =  '\u0020' .. '\u007e'.
+	hex       = "0123456789abcdef".
+	idChars   = bigletter + letter + digit.
+
+	anychar   = ANY.
+
+TOKENS
+	ident     = bigletter { bigletter | letter | digit | underscore }.
+	typeIdent = letter { bigletter | letter | digit | underscore }.
+	number    = digit { digit } [ "." digit { digit } ] .
+
+	string    = '"' { stringCh | '\\' printable } '"'.
+	char      = '\'' ( charCh | '\\' printable { hex } ) '\''.
+	nextLine  = lf.
+	comments  = '-' '-' '-' ['\r'] '\n' anychar { anychar } ['\r'] '\n' '-' '-' '-' ['\r'] '\n'.
+
+PRAGMAS
+	ddtSym    = '$' { digit | letter }. 
+	optionSym = '$' letter { letter } '='
+	            { digit | letter
+	            | '-' | '.' | ':'
+	            }.
+
+
+COMMENTS FROM "/*" TO "*/" NESTED
+COMMENTS FROM "//" TO lf
+
+IGNORE cr + lf + tab
+
+/*-------------------------------------------------------------------------*/
+
+PRODUCTIONS
+
+// Type productions
+
+String<ExpressionPtr &expr> = 
+string 																(. expr = ExpressionPtr(new StringLiteral(t->val)); .)
+.
+
+Number<ExpressionPtr &expr> =
+number 																(. expr = ExpressionPtr(new NumberLiteral(std::stold(t->val))); .)
+.
+
+Array<ExpressionPtr &expr> =										(. ExpressionPtr member; .)
+																	(. ArrayLiteral* arr = new ArrayLiteral(); .)
+																	(. expr = ExpressionPtr(arr); .)
+"["
+[
+Expression<member>													(. arr->Add(member); .)
+{
+	"," Expression<member>											(. arr->Add(member); .)
+}
+]
+"]"
+.
+
+RecordField<RecordFieldPtr &record> = 								(. std::wstring key; ExpressionPtr value; .)
+(
+	ident															(. key = t->val; .)
+) 
+":" 
+	Expression<value>
+																	(. record = RecordFieldPtr(new class RecordField(key, value)); .)
+.
+
+Record<ExpressionPtr &expr> =										(. RecordFieldPtr record; .)
+																	(. RecordLiteral* rec = new RecordLiteral(); .)
+																	(. expr = ExpressionPtr(rec);.)
+"{"
+[
+	RecordField<record> 											(. rec->Add(record); .)
+	{
+		"," RecordField<record> 									(. rec->Add(record); .)
+	}
+]
+"}"
+.
+
+Literal<ExpressionPtr &expr> =
+(
+	String<expr> | 
+	Number<expr> | 
+	Array<expr> | 
+	Record<expr>
+)
+.
+
+FunctionCall<ParameterList &list> =									(. ExpressionPtr expr; .)
+"("
+{
+	Expression<expr>												(. list.push_back(expr); .)
+}
+")"
+.
+
+MemberCall<std::wstring &member> =
+"."
+ident 																(. member = t->val; .)
+.
+
+Reference<ExpressionPtr &expr> = 									(. std::wstring member; .)
+ident 																(. std::wstring ident = t->val; .)
+																	(. expr = ExpressionPtr(new SymbolReference(ident)); .)
+																	(. ParameterList paramList; .)
+[
+	FunctionCall<paramList> |										(. expr = ExpressionPtr(new class FunctionCall(ident, paramList)); .)
+	MemberCall<member>												(. expr = ExpressionPtr(new class MemberCall(ident, member)); .)
+]
+.
+
+Expression<ExpressionPtr &expr> = 
+( Literal<expr> | Reference<expr> )
+.
+
+VariableDeclaration<VariablePtr &variable> =						(. ExpressionPtr expr; .)
+"SET" 
+ident 																(. std::wstring identifier = t->val; .)
+"=" 
+Expression<expr>													(. variable = VariablePtr(new Variable(identifier, expr)); .)
+.
+
+Property<ResourcePtr resource> =									(. ExpressionPtr expr; .)
+																	(. std::wstring name; .)
+ident 																(. name = t->val; .)
+"=" 
+Expression<expr>													(. resource->AddProperty(name, expr); .)
+.
+
+
+ResourceDeclaration<StackPtr stack> =								(. std::wstring type, name; .)
+"MAKE"
+ident																(. type = t->val; .)
+ident																(. name = t->val; .)
+																	(. ResourcePtr resource = ResourcePtr(new Resource(type, name)); .)
+[
+"("
+	[
+		Property<resource>
+		{
+			"," Property<resource>
+		}
+	]
+")"	
+]
+																	(. stack->AddResource(resource); .)
+.
+
+StackParameter<StackPtr stack> =									(. std::wstring type, name; .)
+typeIdent															(. type = t->val; .)
+ident																(. name = t->val; .)
+																	(. stack->AddParameter(type, name); .)
+.
+
+OutputParameter<StackPtr stack> =									(. ExpressionPtr expr; .)
+																	(. std::wstring name; .)
+ident 																(. name = t->val; .)
+"="
+Expression<expr>													(. stack->AddOutput(name, expr); .)
+.
+
+OutputDeclaration<StackPtr stack> =
+"RETURN" "("
+OutputParameter<stack> 																
+{
+	"," OutputParameter<stack>
+}
+")"
+.
+
+StackDeclaration<StackPtr &stack> =
+"STACK"
+ident																(. stack = StackPtr(new Stack(t->val)); .)
+"("
+[
+	StackParameter<stack>
+	{
+		"," StackParameter<stack>
+	}
+]
+")"
+"{"
+{ 
+	ResourceDeclaration<stack>
+}
+[
+	OutputDeclaration<stack>
+]
+"}"
+.
+
+Statement =															(. VariablePtr variable; .)
+																	(. StackPtr stack; .)
+(
+	VariableDeclaration<variable>									(. variables.push_back(variable); .)
+	| StackDeclaration<stack>										(. stacks.push_back(stack); .)
+)
+.
+
+Description =
+comments 															(. description = t->val; .)
+.
+
+CFL =
+[Description]
+{Statement} EOF
+.
+
+END CFL.
