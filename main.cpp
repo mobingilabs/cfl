@@ -281,7 +281,6 @@ picojson::value parse(std::string filename, std::wstring stackName)
 
 	Substitution subs;
 
-
 	for (const StackPtr stack : p.stacks)
 	{
 		stackMap[stack->getName()] = stack;
@@ -294,7 +293,7 @@ picojson::value parse(std::string filename, std::wstring stackName)
 
 	if (stackMap.find(stackName) == stackMap.end())
 	{
-		std::wcerr << "Stack " << stackName << " not defined in cfl" << std::endl;
+		std::wcerr << "Stack " << stackName << " not defined." << std::endl;
 		exit(EXIT_FAILURE);
 	}
 
