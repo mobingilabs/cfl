@@ -42,8 +42,6 @@ public:
 	{
 		awsTypes[L"string"] = L"String";
 		awsTypes[L"number"] = L"Number";
-
-		awsTypes[L"EIP"] = L"AWS::EC2::EIP";
 	}
 
 	std::wstring convertToAwsType(std::wstring type)

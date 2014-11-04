@@ -39,6 +39,7 @@ CHARACTERS
 	lf        = '\n'.
 	tab       = '\t'.
 	underscore= '_'.
+	colon	  = ':'.
 
 	stringCh  = ANY - '"' - '\\' - cr - lf.
 	charCh    = ANY - '\'' - '\\' - cr - lf.
@@ -49,7 +50,7 @@ CHARACTERS
 	anychar   = ANY.
 
 TOKENS
-	ident     = bigletter { bigletter | letter | digit | underscore }.
+	ident     = bigletter { bigletter | letter | digit | underscore | colon colon }.
 	typeIdent = letter { bigletter | letter | digit | underscore }.
 	number    = digit { digit } [ "." digit { digit } ] .
 
@@ -244,8 +245,11 @@ Description =
 comments 															(. description = t->val; .)
 .
 
+
+
 CFL =
 [Description]
+
 {Statement} EOF
 .
 

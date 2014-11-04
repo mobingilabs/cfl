@@ -26,14 +26,14 @@ STACK MakeTwoElasticIPs (string WoofName)
 
 STACK MakeAnElasticIP (string InstanceId)
 {
-	MAKE EIP ControlServerIP (InstanceId = Regions)
+	MAKE AWS::EC2::EIP ControlServerIP (InstanceId = Regions)
 
 	RETURN (Result = ControlServerIP.AllocationId)
 }
 
 STACK MakeAnother (string InstanceId)
 {
-	MAKE EIP ControlAnotherServerIP (InstanceId = InstanceId)
+	MAKE AWS::EC2::EIP ControlAnotherServerIP (InstanceId = InstanceId)
 
 	RETURN (Result = ControlServerIP)
 }
