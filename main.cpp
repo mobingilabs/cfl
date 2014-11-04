@@ -75,6 +75,15 @@ void checkParameters(
 		}
 	}
 
+	// remove params that have defaults
+	for(auto iter = params.begin(); iter != params.end(); ) {
+		if (iter->second->hasDefault()) {
+			iter = params.erase(iter);
+		} else {
+			++iter;
+		}
+	}
+
 	if (params.size() > 0)
 	{
 		std::wcerr << L"Not enough arguments to stack " << stackName << std::endl;
@@ -116,6 +125,16 @@ void addStack(
 			// Perform parameter-checking
 			checkParameters(calledStack->getName(), res->getProperties(), calledStack->getParameters());
 
+			// Apply defaults
+			for (auto& paramkv : calledStack->getParameters())
+			{
+				if (paramkv.second->hasDefault())
+				{
+					newSubs.Add(paramkv.second->getName(), paramkv.second->getDefault()->asJson(subs));
+				}
+			}
+
+			// Apply params
 			for (auto& propkv : res->getProperties())
 			{
 				newSubs.Add(propkv.first, propkv.second->asJson(subs));

@@ -1,6 +1,6 @@
 ---
-errornoparam.cfl
-Demonstrates the error when you don't pass enough parameters
+defaultparam.cfl
+Demonstrates the use of parameter defaults
 ---
 
 STACK Main (string WoofName)
@@ -10,7 +10,7 @@ STACK Main (string WoofName)
 	RETURN (TheIP = Cat2.Result)
 }
 
-STACK MakeAnother (string InstanceId)
+STACK MakeAnother (string InstanceId = "creators")
 {
 	MAKE AWS::EC2::EIP ControlServerIP (InstanceId = InstanceId)
 

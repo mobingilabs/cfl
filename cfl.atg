@@ -196,10 +196,15 @@ ident																(. name = t->val; .)
 .
 
 StackParameter<StackPtr stack> =									(. std::wstring type, name; .)
+																	(. ExpressionPtr expr; .)
 typeIdent															(. type = t->val; .)
 ident																(. name = t->val; .)
 																	(. ParameterPtr ptr(new Parameter(name, type)); .)
 																	(. stack->AddParameter(ptr); .)
+[
+	"="
+	Expression<expr>												(. ptr->setDefault(expr); .)
+]
 .
 
 OutputParameter<StackPtr stack> =									(. ExpressionPtr expr; .)

@@ -6,12 +6,12 @@ STACK Main (string WoofName)
 {
 	MAKE MakeAnother Cat2 (Id = WoofName)
 
-	RETURN (TheIP = Woof.Result)
+	RETURN (TheIP = Cat2.Result)
 }
 
 STACK MakeAnother (string InstanceId)
 {
-	MAKE AWS::EC2::EIP ControlAnotherServerIP (InstanceId = InstanceId)
+	MAKE AWS::EC2::EIP ControlServerIP (InstanceId = InstanceId)
 
 	RETURN (Result = ControlServerIP)
 }
