@@ -35,6 +35,7 @@ COMPILER CFL
 	std::vector<VariablePtr> variables;
 	std::vector<StackPtr> stacks;
 	std::vector<StringLiteralPtr> imports;
+	std::vector<StringLiteralPtr> absoluteImports;
 
 CHARACTERS
 	bigletter = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".
@@ -60,6 +61,7 @@ TOKENS
 	number    = digit { digit } [ "." digit { digit } ] .
 
 	string    = '"' { stringCh | '\\' printable } '"'.
+	absimp    = '<' { stringCh | '\\' printable } '>'.
 	char      = '\'' ( charCh | '\\' printable { hex } ) '\''.
 	nextLine  = lf.
 	comments  = '-' '-' '-' ['\r'] '\n' anychar { anychar } ['\r'] '\n' '-' '-' '-' ['\r'] '\n'.
@@ -258,8 +260,12 @@ comments 															(. description = t->val; .)
 
 ImportStatement =
 "IMPORT"
-string 																(. StringLiteralPtr str = StringLiteralPtr(new StringLiteral(t->val)); .)
+(
+	string 															(. StringLiteralPtr str = StringLiteralPtr(new StringLiteral(t->val)); .)
 																	(. imports.push_back(str); .)
+	| absimp														(. StringLiteralPtr str = StringLiteralPtr(new StringLiteral(t->val)); .)
+																	(. absoluteImports.push_back(str); .)
+)
 .
 
 CFL =

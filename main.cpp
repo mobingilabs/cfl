@@ -115,6 +115,8 @@ void addStack(
 
 	for (auto& res : stack->getResources())
 	{
+		std::wstring awsPrefix(L"AWS::");
+
 		// Two cases: one is an AWS Resource, another is a stack
 		if ( stackMap.find(res->getType()) != stackMap.end() )
 		{
@@ -172,12 +174,17 @@ void addStack(
 				subs.Add(outputRef, outputkv.second.item->asJson(newSubs));
 			}
 		}
-		else
+		else if (res->getType().compare(0, awsPrefix.size(), awsPrefix) == 0)
 		{
 			std::wstring keyname = res->getName() + suffix;
 
 			Info<ResourcePtr> resInfo = {res->getName(), stack, res};
 			resources[keyname] = resInfo;
+		}
+		else
+		{
+			std::wcerr << L"No such resource: " << res->getType() << std::endl;
+			exit(EXIT_FAILURE);
 		}
 	}
 
@@ -231,10 +238,62 @@ void addStack(
 
 }
 
-// returns outputs
+std::wstring getDirFromFilename(std::wstring filename)
+{
+	// get current path
+	std::string mbFilename(filename.begin(), filename.end());
+	char result[PATH_MAX + 1];
+	std::string path = realpath(mbFilename.c_str(), result);
+	std::string dir = path.substr(0, path.find_last_of("/"));
 
+	std::wstring wDir(dir.begin(), dir.end());
+
+	return wDir;
+}
+
+void importFile(
+	std::wstring filename, 
+	std::map< std::wstring, StackPtr >& stackMap,
+	std::map< std::wstring, VariablePtr > variableMap)
+{
+	std::shared_ptr<Scanner> s(new Scanner(filename.c_str()));
+	Parser p(s.get());
+
+	p.Parse();
+
+	for (const StringLiteralPtr str : p.imports)
+	{
+		importFile(getDirFromFilename(filename) + L"/" + str->getContent(), stackMap, variableMap);
+	}
+
+	for (const StringLiteralPtr str : p.absoluteImports)
+	{
+		importFile(L"aws/" + str->getContent(), stackMap, variableMap);
+	}
+
+	for (const StackPtr stack : p.stacks)
+	{
+		stackMap[stack->getName()] = stack;
+	}
+
+	for (const VariablePtr var : p.variables)
+	{
+		variableMap[var->getName()] = var;
+	}
+}
+
+// returns outputs
 picojson::value parse(std::string filename, std::wstring stackName)
 {
+	std::map< std::wstring, StackPtr > stackMap;
+	std::map< std::wstring, VariablePtr > variableMap;
+
+	std::map< std::wstring, Info<ParameterPtr> > parameters;
+	std::map< std::wstring, Info<ExpressionPtr> > outputs;
+	std::map< std::wstring, Info<ResourcePtr> > resources;
+
+	Substitution subs;
+
 	std::wstring wFilename(filename.begin(), filename.end());
 	std::shared_ptr<Scanner> s(new Scanner(wFilename.c_str()));
 	Parser p(s.get());
@@ -272,24 +331,7 @@ picojson::value parse(std::string filename, std::wstring stackName)
 		}
 	}
 
-	std::map< std::wstring, StackPtr > stackMap;
-	std::map< std::wstring, VariablePtr > variableMap;
-
-	std::map< std::wstring, Info<ParameterPtr> > parameters;
-	std::map< std::wstring, Info<ExpressionPtr> > outputs;
-	std::map< std::wstring, Info<ResourcePtr> > resources;
-
-	Substitution subs;
-
-	for (const StackPtr stack : p.stacks)
-	{
-		stackMap[stack->getName()] = stack;
-	}
-
-	for (const VariablePtr var : p.variables)
-	{
-		variableMap[var->getName()] = var;
-	}
+	importFile(wFilename, stackMap, variableMap);
 
 	if (stackMap.find(stackName) == stackMap.end())
 	{

@@ -1,0 +1,11 @@
+---
+eip.cfl
+Contains definition for the AWS::EC2::EIP
+---
+
+STACK EIP (string InstanceId)
+{
+	MAKE AWS::EC2::EIP ControlServerIP (InstanceId = InstanceId)
+
+	RETURN (IP = ControlServerIP)
+}

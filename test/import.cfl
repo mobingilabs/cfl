@@ -1,0 +1,12 @@
+---
+Demonstrates importing
+---
+
+IMPORT "eip.cfl"
+
+STACK Main (string WoofName)
+{
+	MAKE EIP AnAddress (InstanceId = WoofName)
+
+	RETURN (TheIP = AnAddress.IP)
+}

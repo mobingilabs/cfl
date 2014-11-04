@@ -25,6 +25,11 @@ public:
 	{
 		return picojson::value(str);
 	}
+
+	std::wstring getContent() const
+	{
+		return str;
+	}
 };
 
 #endif // STRINGLITERAL_H
