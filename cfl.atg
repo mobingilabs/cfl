@@ -24,12 +24,15 @@ typedef std::shared_ptr<Variable> VariablePtr;
 typedef std::shared_ptr<Stack> StackPtr;
 typedef std::shared_ptr<Resource> ResourcePtr;
 
+typedef std::shared_ptr<StringLiteral> StringLiteralPtr;
+
 COMPILER CFL
 
 	std::wstring description = L"Created using git@github.com:davidsiaw/cfl. Since this is generated code, your changes will likely be replaced.";
 
 	std::vector<VariablePtr> variables;
 	std::vector<StackPtr> stacks;
+	std::vector<StringLiteralPtr> imports;
 
 CHARACTERS
 	bigletter = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".
@@ -245,11 +248,15 @@ Description =
 comments 															(. description = t->val; .)
 .
 
-
+ImportStatement =
+"IMPORT"
+string 																(. StringLiteralPtr str = StringLiteralPtr(new StringLiteral(t->val)); .)
+																	(. imports.push_back(str); .)
+.
 
 CFL =
 [Description]
-
+{ImportStatement}
 {Statement} EOF
 .
 
