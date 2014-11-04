@@ -15,6 +15,7 @@
 #include "Variable.h"
 #include "Stack.h"
 #include "Resource.h"
+#include "Parameter.h"
 
 typedef std::shared_ptr<Expression> ExpressionPtr;
 typedef std::shared_ptr<RecordField> RecordFieldPtr;
@@ -23,6 +24,7 @@ typedef std::vector< std::shared_ptr<Expression> > ParameterList;
 typedef std::shared_ptr<Variable> VariablePtr;
 typedef std::shared_ptr<Stack> StackPtr;
 typedef std::shared_ptr<Resource> ResourcePtr;
+typedef std::shared_ptr<Parameter> ParameterPtr;
 
 typedef std::shared_ptr<StringLiteral> StringLiteralPtr;
 
@@ -196,7 +198,8 @@ ident																(. name = t->val; .)
 StackParameter<StackPtr stack> =									(. std::wstring type, name; .)
 typeIdent															(. type = t->val; .)
 ident																(. name = t->val; .)
-																	(. stack->AddParameter(type, name); .)
+																	(. ParameterPtr ptr(new Parameter(name, type)); .)
+																	(. stack->AddParameter(ptr); .)
 .
 
 OutputParameter<StackPtr stack> =									(. ExpressionPtr expr; .)

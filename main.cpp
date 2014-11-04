@@ -55,10 +55,20 @@ public:
 	}
 };
 
+void checkParameters(
+	std::map<std::wstring, std::shared_ptr<Expression>> args, 
+	std::map<std::wstring, ParameterPtr> params)
+{
+	for (auto kvpair : params)
+	{
+
+	}
+}
+
 void addStack(
 	std::wstring suffix, 
 	StackPtr stack, 
-	std::map< std::wstring, Info<std::wstring> >& parameters,
+	std::map< std::wstring, Info<ParameterPtr> >& parameters,
 	std::map< std::wstring, Info<ResourcePtr> >& resources,
 	std::map< std::wstring, Info<ExpressionPtr> >& outputs,
 	std::map< std::wstring, StackPtr >& stackMap,
@@ -73,7 +83,7 @@ void addStack(
 	for (auto& kv : stack->getParameters())
 	{
 		std::wstring keyname = stack->getName() + L"." + kv.first;
-		Info<std::wstring> paramInfo = {kv.first, stack, kv.second};
+		Info<ParameterPtr> paramInfo = {kv.first, stack, kv.second};
 		parameters[keyname] = paramInfo;
 	}
 
@@ -86,12 +96,15 @@ void addStack(
 
 			StackPtr calledStack = stackMap[res->getType()];
 
+			// Perform parameter-checking
+			checkParameters(res->getProperties(), calledStack->getParameters());
+
 			for (auto& propkv : res->getProperties())
 			{
 				newSubs.Add(propkv.first, propkv.second->asJson(subs));
 			}
 
-			std::map< std::wstring, Info<std::wstring> > parameters;
+			std::map< std::wstring, Info<ParameterPtr> > parameters;
 			std::map< std::wstring, Info<ResourcePtr> > resources;
 			std::map< std::wstring, Info<ExpressionPtr> > outputs;
 
@@ -143,7 +156,7 @@ void addStack(
 	{
 		std::map<std::wstring, picojson::value> parmInfo;
 
-		parmInfo[L"Type"] = picojson::value(tables->convertToAwsType(kv.second.item));
+		parmInfo[L"Type"] = picojson::value(tables->convertToAwsType(kv.second.item->getType()));
 		parmInfo[L"Description"] = picojson::value(kv.first);
 
 		parameterList[kv.second.name] = picojson::value(parmInfo);
@@ -226,7 +239,7 @@ picojson::value parse(std::string filename, std::wstring stackName)
 	std::map< std::wstring, StackPtr > stackMap;
 	std::map< std::wstring, VariablePtr > variableMap;
 
-	std::map< std::wstring, Info<std::wstring> > parameters;
+	std::map< std::wstring, Info<ParameterPtr> > parameters;
 	std::map< std::wstring, Info<ExpressionPtr> > outputs;
 	std::map< std::wstring, Info<ResourcePtr> > resources;
 

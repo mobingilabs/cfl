@@ -7,11 +7,12 @@
 
 #include "Resource.h"
 #include "Expression.h"
+#include "Parameter.h"
 
 class Stack
 {
 	std::wstring name;
-	std::map<std::wstring, std::wstring> parameters;
+	std::map< std::wstring, std::shared_ptr<Parameter> > parameters;
 	std::vector< std::shared_ptr<Resource> > resources;
 	std::map< std::wstring, std::shared_ptr<Expression> > outputs;
 
@@ -21,9 +22,9 @@ public:
 
 	}
 
-	void AddParameter(std::wstring type, std::wstring name)
+	void AddParameter(std::shared_ptr<Parameter> parameter)
 	{
-		parameters[name] = type;
+		parameters[parameter->getName()] = parameter;
 	}
 
 	void AddResource(std::shared_ptr<Resource> resource)
@@ -41,7 +42,7 @@ public:
 		return name;
 	}
 
-	std::map<std::wstring, std::wstring> getParameters() const
+	std::map< std::wstring, std::shared_ptr<Parameter> > getParameters() const
 	{
 		return parameters;
 	}
