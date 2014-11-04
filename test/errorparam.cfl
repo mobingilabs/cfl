@@ -1,0 +1,17 @@
+---
+Demonstrates an erroneous situation
+---
+
+STACK Main (string WoofName)
+{
+	MAKE MakeAnother Cat2 (Id = WoofName)
+
+	RETURN (TheIP = Woof.Result)
+}
+
+STACK MakeAnother (string InstanceId)
+{
+	MAKE AWS::EC2::EIP ControlAnotherServerIP (InstanceId = InstanceId)
+
+	RETURN (Result = ControlServerIP)
+}

@@ -1,0 +1,18 @@
+---
+errornoparam.cfl
+Demonstrates the error when you don't pass enough parameters
+---
+
+STACK Main (string WoofName)
+{
+	MAKE MakeAnother Cat2 ()
+
+	RETURN (TheIP = Woof.Result)
+}
+
+STACK MakeAnother (string InstanceId)
+{
+	MAKE AWS::EC2::EIP ControlAnotherServerIP (InstanceId = InstanceId)
+
+	RETURN (Result = ControlServerIP)
+}

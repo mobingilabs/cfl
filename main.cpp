@@ -55,13 +55,30 @@ public:
 	}
 };
 
+
 void checkParameters(
+	std::wstring stackName,
 	std::map<std::wstring, std::shared_ptr<Expression>> args, 
 	std::map<std::wstring, ParameterPtr> params)
 {
-	for (auto kvpair : params)
+	// remove params that have been argumented
+	for (auto argkvpair : args)
 	{
+		if (params.find(argkvpair.first) != params.end())
+		{
+			params.erase(argkvpair.first);
+		}
+		else
+		{
+			std::wcerr << L"Stack " << stackName << " does not have parameter named " << argkvpair.first << std::endl;
+			exit(EXIT_FAILURE);
+		}
+	}
 
+	if (params.size() > 0)
+	{
+		std::wcerr << L"Not enough arguments to stack " << stackName << std::endl;
+		exit(EXIT_FAILURE);
 	}
 }
 
@@ -97,7 +114,7 @@ void addStack(
 			StackPtr calledStack = stackMap[res->getType()];
 
 			// Perform parameter-checking
-			checkParameters(res->getProperties(), calledStack->getParameters());
+			checkParameters(calledStack->getName(), res->getProperties(), calledStack->getParameters());
 
 			for (auto& propkv : res->getProperties())
 			{
