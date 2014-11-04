@@ -9,7 +9,7 @@ STACK MakeMoreEIPs (string Power)
 	MAKE MakeTwoElasticIPs M1 (WoofName = Power)
 	MAKE MakeTwoElasticIPs M2 (WoofName = "Two")
 	MAKE MakeTwoElasticIPs M3 (WoofName = Power)
-	MAKE MakeTwoElasticIPs M4 (WoofName = "Four")
+	MAKE MakeTwoElasticIPs M4 (WoofName2 = "Four")
 }
 
 STACK MakeTwoElasticIPs (string WoofName)

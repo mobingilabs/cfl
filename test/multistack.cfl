@@ -28,7 +28,7 @@ STACK MakeAnElasticIP (string InstanceId)
 {
 	MAKE EIP ControlServerIP (InstanceId = Regions)
 
-	RETURN (Result = ControlServerIP)
+	RETURN (Result = ControlServerIP.AllocationId)
 }
 
 STACK MakeAnother (string InstanceId)

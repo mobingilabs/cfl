@@ -58,7 +58,7 @@ public:
 };
 
 void addStack(
-	std::wstring prefix, 
+	std::wstring suffix, 
 	StackPtr stack, 
 	std::map< std::wstring, Info<std::wstring> >& parameters,
 	std::map< std::wstring, Info<ResourcePtr> >& resources,
@@ -100,10 +100,10 @@ void addStack(
 			std::map<std::wstring, picojson::value> parameterList;
 			std::map<std::wstring, picojson::value> outputList;
 
-			std::wstring newPrefix = prefix + res->getName() + L"In";
+			std::wstring newSuffix = L"In" + res->getName() + suffix;
 
 			addStack(
-				newPrefix,
+				newSuffix,
 				stackMap[res->getType()], 
 				parameters, 
 				resources, 
@@ -127,7 +127,7 @@ void addStack(
 		}
 		else
 		{
-			std::wstring keyname = prefix + res->getName();
+			std::wstring keyname = res->getName() + suffix;
 
 			Info<ResourcePtr> resInfo = {res->getName(), stack, res};
 			resources[keyname] = resInfo;
@@ -151,16 +151,6 @@ void addStack(
 		parameterList[kv.second.name] = picojson::value(parmInfo);
 	}
 
-	for (auto& kv : outputs)
-	{
-		std::map<std::wstring, picojson::value> outputObject;
-
-		outputObject[L"Description"] = picojson::value(kv.first);
-		outputObject[L"Value"] = kv.second.item->asJson(subs);
-
-		outputList[kv.second.name] = picojson::value(outputObject);
-	}
-
 
 	for (auto& kv : resources)
 	{
@@ -175,10 +165,23 @@ void addStack(
 		}
 		resourceObject[L"Properties"] = picojson::value(propertiesObject);
 
+		resourceObject[L"Description"] = picojson::value(kv.second.name);
+
 		resourceList[kv.first] = picojson::value(resourceObject);
 
 		subs.Add(kv.second.name, SymbolReference(kv.first).asJson(subs) );
 	}
+
+	for (auto& kv : outputs)
+	{
+		std::map<std::wstring, picojson::value> outputObject;
+
+		outputObject[L"Description"] = picojson::value(kv.first);
+		outputObject[L"Value"] = kv.second.item->asJson(subs);
+
+		outputList[kv.second.name] = picojson::value(outputObject);
+	}
+
 }
 
 // returns outputs

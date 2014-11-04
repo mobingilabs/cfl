@@ -35,11 +35,26 @@ public:
 			return subs.Substitute(keyname);
 		}
 
+		std::wstring resolvedName = record;
+
+		if (subs.HasSubstitute(record))
+		{
+			picojson::value sub = subs.Substitute(record);
+			if (sub.is<picojson::value::object>())
+			{
+				auto& obj = sub.get<picojson::value::object>();
+				if (obj.find(L"Ref") != obj.end() && obj.find(L"Ref")->second.is<std::wstring>())
+				{
+					resolvedName = obj[L"Ref"].get<std::wstring>();
+				}
+			}
+		}
+
 		std::map<std::wstring, picojson::value> obj;
 
 		std::vector<picojson::value> arr;
 
-		arr.push_back(picojson::value(record));
+		arr.push_back(picojson::value(resolvedName));
 		arr.push_back(picojson::value(member));
 
 		obj[L"Fn::GetAtt"] = picojson::value(arr);
