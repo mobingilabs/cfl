@@ -14,9 +14,34 @@ class StringLiteral : public Expression
 		return s.substr(1, s.size() - 2);
 	}
 
+	static inline std::wstring unescape(const std::wstring& s)
+	{
+	  std::wstring res;
+	  std::wstring::const_iterator it = s.begin();
+	  while (it != s.end())
+	  {
+	    wchar_t c = *it++;
+	    if (c == '\\' && it != s.end())
+	    {
+	      switch (*it++) {
+	      case L'\\': c = L'\\'; break;
+	      case L'n': c = L'\n'; break;
+	      case L't': c = L'\t'; break;
+	      case L'r': c = L'\r'; break;
+	      default: 
+	        // invalid escape sequence - skip it. alternatively you can copy it as is, throw an exception...
+	        continue;
+	      }
+	    }
+	    res += c;
+	  }
+
+	  return res;
+	}
+
 public:
 
-	StringLiteral(std::wstring str) : str(trim(str))
+	StringLiteral(std::wstring str) : str(unescape(trim(str)))
 	{
 
 	}
