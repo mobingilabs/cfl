@@ -1,0 +1,9 @@
+#!/bin/bash
+PWD=`pwd`
+OUTDIR=.temp
+OUTPUT=m.template
+
+./build.sh && ./cfl $1 $2 | python -m json.tool | pygmentize -l javascript
+mkdir -p $OUTDIR
+./cfl $1 $2 > .temp/$OUTPUT
+aws cloudformation validate-template --template-body file://$PWD/$OUTDIR/$OUTPUT

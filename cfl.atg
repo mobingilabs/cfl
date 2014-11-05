@@ -3,6 +3,7 @@
 #include <vector>
 #include <memory>
 
+#include "BooleanLiteral.h"
 #include "NumberLiteral.h"
 #include "StringLiteral.h"
 #include "ArrayLiteral.h"
@@ -85,6 +86,11 @@ PRODUCTIONS
 
 // Type productions
 
+Boolean<ExpressionPtr &expr> =
+"true" 																(. expr = ExpressionPtr(new BooleanLiteral(true)); .)
+| "false"															(. expr = ExpressionPtr(new BooleanLiteral(false)); .)
+.
+
 String<ExpressionPtr &expr> = 
 string 																(. expr = ExpressionPtr(new StringLiteral(t->val)); .)
 .
@@ -133,7 +139,8 @@ Literal<ExpressionPtr &expr> =
 	String<expr> | 
 	Number<expr> | 
 	Array<expr> | 
-	Record<expr>
+	Record<expr> |
+	Boolean<expr>
 )
 .
 
@@ -155,8 +162,8 @@ ident 																(. std::wstring ident = t->val; .)
 																	(. expr = ExpressionPtr(new SymbolReference(ident)); .)
 																	(. ParameterList paramList; .)
 [
-	FunctionCall<paramList> |										(. expr = ExpressionPtr(new class FunctionCall(ident, paramList)); .)
-	MemberCall<member>												(. expr = ExpressionPtr(new class MemberCall(ident, member)); .)
+	FunctionCall<paramList>											(. expr = ExpressionPtr(new class FunctionCall(ident, paramList)); .)
+	| MemberCall<member>											(. expr = ExpressionPtr(new class MemberCall(ident, member)); .)
 ]
 .
 

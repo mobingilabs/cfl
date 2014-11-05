@@ -117,6 +117,8 @@ void addStack(
 	{
 		std::wstring awsPrefix(L"AWS::");
 
+		subs.Add(res->getName(), SymbolReference(res->getName() + suffix).asJson(subs) );
+
 		// Two cases: one is an AWS Resource, another is a stack
 		if ( stackMap.find(res->getType()) != stackMap.end() )
 		{
@@ -202,6 +204,11 @@ void addStack(
 		parmInfo[L"Type"] = picojson::value(tables->convertToAwsType(kv.second.item->getType()));
 		parmInfo[L"Description"] = picojson::value(kv.first);
 
+		if (kv.second.item->hasDefault())
+		{
+			parmInfo[L"Default"] = kv.second.item->getDefault()->asJson(subs);
+		}
+
 		parameterList[kv.second.name] = picojson::value(parmInfo);
 	}
 
@@ -222,6 +229,7 @@ void addStack(
 		resourceObject[L"Description"] = picojson::value(kv.second.name);
 
 		resourceList[kv.first] = picojson::value(resourceObject);
+
 
 		subs.Add(kv.second.name, SymbolReference(kv.first).asJson(subs) );
 	}
@@ -254,7 +262,7 @@ std::wstring getDirFromFilename(std::wstring filename)
 void importFile(
 	std::wstring filename, 
 	std::map< std::wstring, StackPtr >& stackMap,
-	std::map< std::wstring, VariablePtr > variableMap)
+	std::map< std::wstring, VariablePtr >& variableMap)
 {
 	std::shared_ptr<Scanner> s(new Scanner(filename.c_str()));
 	Parser p(s.get());
@@ -341,10 +349,7 @@ picojson::value parse(std::string filename, std::wstring stackName)
 
 	for (auto kvpair : variableMap)
 	{
-		if ( auto expr = std::dynamic_pointer_cast< StringLiteral >( kvpair.second->getExpr() ) )
-		{
-			subs.Add(kvpair.first, expr->asJson(subs));
-		}
+		subs.Add(kvpair.first, kvpair.second->getExpr()->asJson(subs));
 	}
 
 	std::map<std::wstring, picojson::value> parameterList;

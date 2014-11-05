@@ -21,14 +21,19 @@ public:
 	{
 		std::map<std::wstring, picojson::value> obj;
 
-		std::vector<picojson::value> parmArr;
-
-		for (const std::shared_ptr<Expression>& p : params)
+		if (params.size() > 1)
 		{
-			parmArr.push_back(p->asJson(subs));
+			std::vector<picojson::value> parmArr;
+			for (const std::shared_ptr<Expression>& p : params)
+			{
+				parmArr.push_back(p->asJson(subs));
+			}
+			obj[funcName] = picojson::value(parmArr);
 		}
-
-		obj[funcName] = picojson::value(parmArr);
+		else
+		{
+			obj[funcName] = picojson::value((*params.begin())->asJson(subs));
+		}
 
 		return picojson::value(obj);
 	}
