@@ -55,6 +55,11 @@ public:
 	{
 		return str;
 	}
+
+	virtual ExpressionForm getForm() const
+	{
+		return STRING_LITERAL;
+	}
 };
 
 #endif // STRINGLITERAL_H

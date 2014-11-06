@@ -91,9 +91,25 @@ void checkParameters(
 	}
 }
 
+void applyMetadata(
+	const std::vector< MetadataPtr >& metadata, 
+	std::map< std::wstring, MetadataPtr >& dependencies,
+	Substitution& subs)
+{
+	for (auto& meta : metadata)
+	{
+		if (meta->getKey().compare(L"DependsOn") == 0 && meta->getExpression()->getForm() == SYMBOL_REFERENCE)
+		{
+			std::wstring key = meta->getExpression()->asJson(subs).get<picojson::value::object>()[L"Ref"].get<std::wstring>();
+			dependencies[key] = meta;
+		}
+	}
+}
+
 void addStack(
 	std::wstring suffix, 
-	StackPtr stack, 
+	StackPtr stack,
+	std::vector< MetadataPtr > metadata,
 	std::map< std::wstring, Info<ParameterPtr> >& parameters,
 	std::map< std::wstring, Info<ResourcePtr> >& resources,
 	std::map< std::wstring, Info<ExpressionPtr> >& outputs,
@@ -148,6 +164,14 @@ void addStack(
 			std::map< std::wstring, Info<ResourcePtr> > resources;
 			std::map< std::wstring, Info<ExpressionPtr> > outputs;
 
+			std::vector< MetadataPtr > newMetadata = metadata;
+
+			// Apply meta to all inner stacks
+			for (auto& meta : res->getMetadata())
+			{
+				newMetadata.push_back(meta);
+			}
+
 			std::map<std::wstring, picojson::value> parameterList;
 			std::map<std::wstring, picojson::value> outputList;
 
@@ -156,6 +180,7 @@ void addStack(
 			addStack(
 				newSuffix,
 				stackMap[res->getType()], 
+				newMetadata,
 				parameters, 
 				resources, 
 				outputs, 
@@ -178,6 +203,7 @@ void addStack(
 		}
 		else if (res->getType().compare(0, awsPrefix.size(), awsPrefix) == 0)
 		{
+
 			std::wstring keyname = res->getName() + suffix;
 
 			Info<ResourcePtr> resInfo = {res->getName(), stack, res};
@@ -215,18 +241,37 @@ void addStack(
 
 	for (auto& kv : resources)
 	{
+		
+		std::map< std::wstring, MetadataPtr > dependencies;
+
+		// Apply meta
+		applyMetadata(kv.second.item->getMetadata(), dependencies, subs);
+		applyMetadata(metadata, dependencies, subs);
+
+		// Build object
 		std::map<std::wstring, picojson::value> resourceObject;
 
 		resourceObject[L"Type"] = picojson::value(tables->convertToAwsType(kv.second.item->getType()));
 
 		std::map<std::wstring, picojson::value> propertiesObject;
-		for (auto& propkv : kv.second.item->getProperties()) {
+		for (auto& propkv : kv.second.item->getProperties())
+		{
 
 			propertiesObject[propkv.first] = propkv.second->asJson(subs);
 		}
 		resourceObject[L"Properties"] = picojson::value(propertiesObject);
 
 		resourceObject[L"Description"] = picojson::value(kv.second.name);
+
+		if (dependencies.size() != 0)
+		{
+			std::vector< picojson::value > arr;
+			for (auto dependencykv : dependencies) 
+			{
+				arr.push_back(picojson::value(dependencykv.first));
+			}
+			resourceObject[L"DependsOn"] = picojson::value(arr);
+		}
 
 		resourceList[kv.first] = picojson::value(resourceObject);
 
@@ -355,8 +400,10 @@ picojson::value parse(std::string filename, std::wstring stackName)
 	std::map<std::wstring, picojson::value> parameterList;
 	std::map<std::wstring, picojson::value> resourceList;
 	std::map<std::wstring, picojson::value> outputList;
+	std::vector< MetadataPtr > metadata;
 
 	addStack(L"", stackMap[stackName], 
+		metadata,
 		parameters, 
 		resources, 
 		outputs, 

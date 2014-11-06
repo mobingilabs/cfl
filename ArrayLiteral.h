@@ -6,7 +6,6 @@
 
 #include "Expression.h"
 
-
 class ArrayLiteral : public Expression
 {
 	std::vector<std::shared_ptr<Expression>> elements;
@@ -31,6 +30,11 @@ public:
 		}
 
 		return picojson::value(arr);
+	}
+
+	virtual ExpressionForm getForm() const
+	{
+		return ARRAY_LITERAL;
 	}
 };
 

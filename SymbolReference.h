@@ -15,6 +15,11 @@ public:
 	{
 
 	}
+
+	std::wstring getSymbolName() const
+	{
+		return symbolName;
+	}
 	
 	virtual picojson::value asJson(const Substitution& subs) const 
 	{
@@ -28,6 +33,11 @@ public:
 		obj[L"Ref"] = picojson::value(symbolName);
 
 		return picojson::value(obj);
+	}
+
+	virtual ExpressionForm getForm() const
+	{
+		return SYMBOL_REFERENCE;
 	}
 };
 

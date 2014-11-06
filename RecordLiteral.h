@@ -33,6 +33,11 @@ public:
 
 		return picojson::value(obj);
 	}
+
+	virtual ExpressionForm getForm() const
+	{
+		return RECORD_LITERAL;
+	}
 };
 
 #endif // RECORDLITERAL_H

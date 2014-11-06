@@ -16,6 +16,11 @@ public:
 	{
 		return picojson::value(number);
 	}
+
+	virtual ExpressionForm getForm() const
+	{
+		return NUMBER_LITERAL;
+	}
 };
 
 #endif // NUMBERLITERAL_H

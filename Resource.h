@@ -5,15 +5,17 @@
 #include <memory>
 #include <string>
 #include "Expression.h"
+#include "Metadata.h"
 
 class Resource
 {
-	std::map<std::wstring, std::shared_ptr<Expression>> properties;
+	std::map< std::wstring, std::shared_ptr<Expression> > properties;
 	std::wstring type;
 	std::wstring name;
+	std::vector< std::shared_ptr<Metadata> > metadata;
 
 public:
-	Resource(std::wstring type, std::wstring name) : type(type), name(name)
+	Resource(std::wstring type, std::wstring name, std::vector< std::shared_ptr<Metadata> > metadata) : type(type), name(name), metadata(metadata)
 	{
 
 	}
@@ -31,6 +33,11 @@ public:
 	std::wstring getType() const
 	{
 		return type;
+	}
+
+	std::vector< std::shared_ptr<Metadata> > getMetadata() const
+	{
+		return metadata;
 	}
 
 	std::map<std::wstring, std::shared_ptr<Expression>> getProperties() const

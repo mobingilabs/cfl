@@ -61,6 +61,11 @@ public:
 
 		return picojson::value(obj);
 	}
+
+	virtual ExpressionForm getForm() const
+	{
+		return MEMBER_CALL;
+	}
 };
 
 #endif // MEMBERCALL_H

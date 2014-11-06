@@ -23,6 +23,11 @@ public:
 	{
 		return val;
 	}
+
+	virtual ExpressionForm getForm() const
+	{
+		return BOOLEAN_LITERAL;
+	}
 };
 
 #endif // BOOLEANLITERAL_H

@@ -12,6 +12,7 @@
 #include "SymbolReference.h"
 #include "FunctionCall.h"
 #include "MemberCall.h"
+#include "Metadata.h"
 
 #include "Variable.h"
 #include "Stack.h"
@@ -20,7 +21,9 @@
 
 typedef std::shared_ptr<Expression> ExpressionPtr;
 typedef std::shared_ptr<RecordField> RecordFieldPtr;
+typedef std::shared_ptr<Metadata> MetadataPtr;
 typedef std::vector< std::shared_ptr<Expression> > ParameterList;
+typedef std::vector< MetadataPtr > MetadataList;
 
 typedef std::shared_ptr<Variable> VariablePtr;
 typedef std::shared_ptr<Stack> StackPtr;
@@ -185,12 +188,27 @@ ident 																(. name = t->val; .)
 Expression<expr>													(. resource->AddProperty(name, expr); .)
 .
 
+MetadataDeclaration<MetadataPtr& metadata> =						(. ExpressionPtr expr; .)
+"["
+ident																(. std::wstring key = t->val; .)
+":"
+Expression<expr>													(. metadata = MetadataPtr(new Metadata(key, expr)); .)
+"]"
+.
+
+MetadataListing<MetadataList& list> =								(. MetadataPtr metadata; .)
+{
+MetadataDeclaration<metadata>										(. list.push_back(metadata); .)
+}
+.
 
 ResourceDeclaration<StackPtr stack> =								(. std::wstring type, name; .)
+																	(. MetadataList list; .)
+MetadataListing<list>
 "MAKE"
 ident																(. type = t->val; .)
 ident																(. name = t->val; .)
-																	(. ResourcePtr resource = ResourcePtr(new Resource(type, name)); .)
+																	(. ResourcePtr resource = ResourcePtr(new Resource(type, name, list)); .)
 [
 "("
 	[
