@@ -149,9 +149,12 @@ Literal<ExpressionPtr &expr> =
 
 FunctionCall<ParameterList &list> =									(. ExpressionPtr expr; .)
 "("
-{
+[
 	Expression<expr>												(. list.push_back(expr); .)
-}
+	{
+		"," Expression<expr>										(. list.push_back(expr); .)
+	}
+]
 ")"
 .
 

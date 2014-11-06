@@ -21,6 +21,26 @@ public:
 	{
 		std::map<std::wstring, picojson::value> obj;
 
+		// TODO: gotta tidy this up into a table of intrinsics
+		if (funcName.compare(L"In::RefName") == 0)
+		{
+			if (params.size() != 1)
+			{
+				std::wcerr << "In::RefName only takes one parameter: a variable which ultimately references a resource" << std::endl;
+				exit(1);
+			}
+
+			if (params[0]->getForm() == SYMBOL_REFERENCE)
+			{
+				std::wstring str = params[0]->asJson(subs).get<picojson::value::object>()[L"Ref"].get<std::wstring>();
+				return picojson::value(str);
+			}
+
+			std::wcerr << "In::RefName variable does not reference a resource!" << std::endl;
+			exit(1);
+		}
+
+		// all other functions
 		if (params.size() > 1)
 		{
 			std::vector<picojson::value> parmArr;

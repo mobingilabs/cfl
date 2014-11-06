@@ -28,6 +28,7 @@ class StringLiteral : public Expression
 	      case L'n': c = L'\n'; break;
 	      case L't': c = L'\t'; break;
 	      case L'r': c = L'\r'; break;
+	      case L'\"': c = L'\"'; break;
 	      default: 
 	        // invalid escape sequence - skip it. alternatively you can copy it as is, throw an exception...
 	        continue;
