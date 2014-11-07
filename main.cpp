@@ -2,12 +2,14 @@
 #include <string>
 #include <map>
 #include <memory>
+#include <sstream>
 #include <algorithm>
 #include <typeinfo>
 #include "picojson/picojson.h"
 
 #include "Parser.h"
 #include "Scanner.h"
+#include "LaunchData.h"
 
 template<typename T>
 struct Info
@@ -29,6 +31,24 @@ bool replaceOne(std::wstring& str, const std::wstring& from, const std::wstring&
 void replace(std::wstring& str, const std::wstring& from, const std::wstring& to)
 {
 	while (replaceOne(str, from, to)) { }
+}
+
+std::wstring zeroPad(int num, int max)
+{
+	std::wstringstream maxString;
+	maxString << max;
+
+	std::wstringstream numString;
+	numString << num;
+
+	std::wstringstream ss;
+
+	for (int i = 0; i < maxString.str().length() - numString.str().length(); i++)
+	{
+		ss << L"0";
+	}
+	ss << num;
+	return ss.str();
 }
 
 class UnknownTypeException { };
@@ -92,8 +112,9 @@ void checkParameters(
 }
 
 void applyMetadata(
-	const std::vector< MetadataPtr >& metadata, 
+	const std::vector< MetadataPtr >& metadata,
 	std::map< std::wstring, MetadataPtr >& dependencies,
+	LaunchData& launchData,
 	Substitution& subs)
 {
 	for (auto& meta : metadata)
@@ -102,6 +123,37 @@ void applyMetadata(
 		{
 			std::wstring key = meta->getExpression()->asJson(subs).get<picojson::value::object>()[L"Ref"].get<std::wstring>();
 			dependencies[key] = meta;
+		}
+
+		if (meta->getKey().compare(L"Yum") == 0 && meta->getExpression()->getForm() == STRING_LITERAL)
+		{
+			StringLiteral* lit = (StringLiteral*)meta->getExpression().get();
+			launchData.addYum(lit->getContent());
+		}
+
+		if (meta->getKey().compare(L"Gem") == 0 && meta->getExpression()->getForm() == STRING_LITERAL)
+		{
+			StringLiteral* lit = (StringLiteral*)meta->getExpression().get();
+			launchData.addGem(lit->getContent());
+		}
+
+		if (meta->getKey().compare(L"RPM") == 0 && meta->getExpression()->getForm() == STRING_LITERAL)
+		{
+			StringLiteral* lit = (StringLiteral*)meta->getExpression().get();
+			launchData.addRPM(lit->getContent());
+		}
+
+
+		if (meta->getKey().compare(L"Service") == 0 && meta->getExpression()->getForm() == STRING_LITERAL)
+		{
+			StringLiteral* lit = (StringLiteral*)meta->getExpression().get();
+			launchData.addService(lit->getContent());
+		}
+
+		if (meta->getKey().compare(L"Command") == 0 && meta->getExpression()->getForm() == STRING_LITERAL)
+		{
+			StringLiteral* lit = (StringLiteral*)meta->getExpression().get();
+			launchData.addCommand(lit->getContent());
 		}
 	}
 }
@@ -243,10 +295,11 @@ void addStack(
 	{
 		
 		std::map< std::wstring, MetadataPtr > dependencies;
+		LaunchData launchData;
 
 		// Apply meta
-		applyMetadata(kv.second.item->getMetadata(), dependencies, subs);
-		applyMetadata(metadata, dependencies, subs);
+		applyMetadata(kv.second.item->getMetadata(), dependencies, launchData, subs);
+		applyMetadata(metadata, dependencies, launchData, subs);
 
 		// Build object
 		std::map<std::wstring, picojson::value> resourceObject;
@@ -271,6 +324,90 @@ void addStack(
 				arr.push_back(picojson::value(dependencykv.first));
 			}
 			resourceObject[L"DependsOn"] = picojson::value(arr);
+		}
+
+		if (launchData.hasData())
+		{
+			std::map<std::wstring, picojson::value> metadataObject;
+			std::map<std::wstring, picojson::value> init;
+			std::map<std::wstring, picojson::value> config;
+
+				std::map<std::wstring, picojson::value> packages;
+
+				if (launchData.getYum().size() > 0)
+				{
+					std::map<std::wstring, picojson::value> yum;
+					for (const std::wstring& package : launchData.getYum())
+					{
+						std::vector< picojson::value > arr;
+						yum[package] = picojson::value(arr);
+					}
+					packages[L"yum"] = picojson::value(yum);
+				}
+
+				if (launchData.getGems().size() > 0)
+				{
+					std::map<std::wstring, picojson::value> gem;
+					for (const std::wstring& package : launchData.getGems())
+					{
+						std::vector< picojson::value > arr;
+						gem[package] = picojson::value(arr);
+					}
+					packages[L"rubygem"] = picojson::value(gem);
+				}
+
+				if (launchData.getRPMs().size() > 0)
+				{
+					std::map<std::wstring, picojson::value> rpm;
+					for (const std::wstring& package : launchData.getRPMs())
+					{
+						std::vector< picojson::value > arr;
+						rpm[package] = picojson::value(arr);
+					}
+					packages[L"rpm"] = picojson::value(rpm);
+				}
+
+				config[L"packages"] = picojson::value(packages);
+
+
+				std::map<std::wstring, picojson::value> services;
+				std::map<std::wstring, picojson::value> sysvinit;
+
+				if (launchData.getServices().size() > 0)
+				{
+					for (const std::wstring& servname : launchData.getServices())
+					{
+						std::map<std::wstring, picojson::value> sprops;
+						sprops[L"enabled"] = picojson::value(true);
+						sprops[L"ensureRunning"] = picojson::value(true);
+						sysvinit[servname] = picojson::value(sprops);
+					}
+				}
+
+				services[L"sysvinit"] = picojson::value(sysvinit);
+				config[L"services"] = picojson::value(services);
+
+
+
+				std::map<std::wstring, picojson::value> commands;
+
+				auto commandList = launchData.getCommands();
+				if (commandList.size() > 0)
+				{
+					for (size_t idx = 0; idx < commandList.size(); idx++)
+					{
+						std::map<std::wstring, picojson::value> cmd;
+						cmd[L"command"] = picojson::value(commandList[idx]);
+						commands[L"cmd" + zeroPad(idx, commandList.size())] = picojson::value(cmd);
+					}
+				}
+
+				config[L"commands"] = picojson::value(commands);
+
+
+			init[L"config"] = picojson::value(config);
+			metadataObject[L"AWS::CloudFormation::Init"] = picojson::value(init);
+			resourceObject[L"Metadata"] = picojson::value(metadataObject);
 		}
 
 		resourceList[kv.first] = picojson::value(resourceObject);
