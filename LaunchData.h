@@ -5,6 +5,26 @@
 #include <vector>
 #include <map>
 
+struct Service
+{
+	std::wstring name;
+};
+
+struct Command
+{
+	std::wstring command;
+	std::wstring cwd;
+};
+
+struct File
+{
+	std::wstring path;
+	std::wstring content;
+	std::wstring owner;
+	std::wstring group;
+	std::wstring mode;
+};
+
 class LaunchData
 {
 	bool containsData;
@@ -12,8 +32,9 @@ class LaunchData
 	std::vector< std::wstring > rpm;
 	std::vector< std::wstring > rubygems;
 
-	std::vector< std::wstring > services;
-	std::vector< std::wstring > commands;
+	std::vector< Service > services;
+	std::vector< Command > commands;
+	std::vector< File > files;
 
 public:
 	LaunchData() : containsData(false)
@@ -54,26 +75,37 @@ public:
 		return rubygems;
 	}
 
-	void addCommand(std::wstring command)
+	void addCommand(Command command)
 	{
 		containsData = true;
 		commands.push_back(command);
 	}
 
-	const std::vector< std::wstring >& getCommands() const
+	const std::vector< Command >& getCommands() const
 	{
 		return commands;
 	}
 
-	void addService(std::wstring service)
+	void addService(Service service)
 	{
 		containsData = true;
 		services.push_back(service);
 	}
 
-	const std::vector< std::wstring >& getServices() const
+	const std::vector< Service >& getServices() const
 	{
 		return services;
+	}
+
+	void addFile(File file)
+	{
+		containsData = true;
+		files.push_back(file);
+	}
+
+	const std::vector< File >& getFiles() const
+	{
+		return files;
 	}
 
 	bool hasData() const

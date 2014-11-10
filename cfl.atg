@@ -191,11 +191,20 @@ ident 																(. name = t->val; .)
 Expression<expr>													(. resource->AddProperty(name, expr); .)
 .
 
+ExtraMetadataInfo<MetadataPtr& metadata> =							(. ExpressionPtr expr; .)
+ident 																(. std::wstring key = t->val; .)
+":"
+Expression<expr>													(. metadata->addInfo(key, expr); .)
+.
+
 MetadataDeclaration<MetadataPtr& metadata> =						(. ExpressionPtr expr; .)
 "["
 ident																(. std::wstring key = t->val; .)
 ":"
 Expression<expr>													(. metadata = MetadataPtr(new Metadata(key, expr)); .)
+{
+	"," ExtraMetadataInfo<metadata>
+}
 "]"
 .
 

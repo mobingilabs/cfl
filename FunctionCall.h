@@ -3,6 +3,8 @@
 
 #include <memory>
 #include <vector>
+#include <fstream>
+#include <unistd.h>
 
 #include "Expression.h"
 
@@ -37,6 +39,30 @@ public:
 			}
 
 			std::wcerr << "In::RefName variable does not reference a resource!" << std::endl;
+			exit(1);
+		}
+
+		if (funcName.compare(L"In::GetFile") == 0)
+		{
+			if (params.size() != 1)
+			{
+				std::wcerr << "In::GetFile only takes one parameter: a file name" << std::endl;
+				exit(1);
+			}
+				
+			if (params[0]->getForm() == STRING_LITERAL)
+			{
+				std::wstring filename = params[0]->asJson(subs).get<std::wstring>();
+
+				std::string fn(filename.begin(), filename.end());
+
+				std::wifstream t(fn);
+				std::wstring content((std::istreambuf_iterator<wchar_t>(t)), std::istreambuf_iterator<wchar_t>());
+
+				return picojson::value(content);
+			}
+
+			std::wcerr << "In::GetFile variable takes a string (a filename)!" << std::endl;
 			exit(1);
 		}
 

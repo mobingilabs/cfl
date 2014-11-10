@@ -9,6 +9,7 @@ class Metadata
 {
 	std::wstring key;
 	std::shared_ptr<Expression> expr;
+	std::map<std::wstring, std::shared_ptr<Expression>> info;
 
 public:
 
@@ -25,6 +26,16 @@ public:
 	std::shared_ptr<Expression> getExpression() const
 	{
 		return expr;
+	}
+
+	std::map<std::wstring, std::shared_ptr<Expression>> getInfo() const
+	{
+		return info;
+	}
+
+	void addInfo(std::wstring key, std::shared_ptr<Expression> expr)
+	{
+		info[key] = expr;
 	}
 };
 

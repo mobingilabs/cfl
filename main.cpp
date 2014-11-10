@@ -5,6 +5,7 @@
 #include <sstream>
 #include <algorithm>
 #include <typeinfo>
+#include <unistd.h>
 #include "picojson/picojson.h"
 
 #include "Parser.h"
@@ -147,13 +148,80 @@ void applyMetadata(
 		if (meta->getKey().compare(L"Service") == 0 && meta->getExpression()->getForm() == STRING_LITERAL)
 		{
 			StringLiteral* lit = (StringLiteral*)meta->getExpression().get();
-			launchData.addService(lit->getContent());
+			Service service;
+			service.name = lit->getContent();
+			launchData.addService(service);
 		}
 
 		if (meta->getKey().compare(L"Command") == 0 && meta->getExpression()->getForm() == STRING_LITERAL)
 		{
 			StringLiteral* lit = (StringLiteral*)meta->getExpression().get();
-			launchData.addCommand(lit->getContent());
+			Command command;
+			command.command = lit->getContent();
+
+			auto info = meta->getInfo();
+
+			if (info.find(L"CWD") != info.end() && info[L"CWD"]->getForm() == STRING_LITERAL )
+			{
+				StringLiteral* lit = (StringLiteral*)info[L"CWD"].get();
+				command.cwd = lit->getContent();
+			}
+
+			launchData.addCommand(command);
+
+		}
+
+		if (meta->getKey().compare(L"File") == 0 && meta->getExpression()->getForm() == STRING_LITERAL)
+		{
+			StringLiteral* lit = (StringLiteral*)meta->getExpression().get();
+
+			File file;
+			file.path = lit->getContent();
+
+			auto info = meta->getInfo();
+
+			if (info.find(L"Content") != info.end())
+			{
+				if (info[L"Content"]->getForm() == STRING_LITERAL )
+				{
+					StringLiteral* lit = (StringLiteral*)info[L"Content"].get();
+					file.content = lit->getContent();
+				}
+				else if (info[L"Content"]->getForm() == FUNCTION_CALL )
+				{
+
+					file.content = info[L"Content"]->asJson(subs).get<std::wstring>();
+				}
+			}
+
+			if (info.find(L"Owner") != info.end())
+			{
+				if (info[L"Owner"]->getForm() == STRING_LITERAL )
+				{
+					StringLiteral* lit = (StringLiteral*)info[L"Owner"].get();
+					file.owner = lit->getContent();
+				}
+			}
+
+			if (info.find(L"Group") != info.end())
+			{
+				if (info[L"Group"]->getForm() == STRING_LITERAL )
+				{
+					StringLiteral* lit = (StringLiteral*)info[L"Group"].get();
+					file.group = lit->getContent();
+				}
+			}
+
+			if (info.find(L"Mode") != info.end())
+			{
+				if (info[L"Mode"]->getForm() == STRING_LITERAL )
+				{
+					StringLiteral* lit = (StringLiteral*)info[L"Mode"].get();
+					file.mode = lit->getContent();
+				}
+			}
+
+			launchData.addFile(file);
 		}
 	}
 }
@@ -353,7 +421,7 @@ void addStack(
 						std::vector< picojson::value > arr;
 						gem[package] = picojson::value(arr);
 					}
-					packages[L"rubygem"] = picojson::value(gem);
+					packages[L"rubygems"] = picojson::value(gem);
 				}
 
 				if (launchData.getRPMs().size() > 0)
@@ -375,12 +443,12 @@ void addStack(
 
 				if (launchData.getServices().size() > 0)
 				{
-					for (const std::wstring& servname : launchData.getServices())
+					for (const Service& servname : launchData.getServices())
 					{
 						std::map<std::wstring, picojson::value> sprops;
 						sprops[L"enabled"] = picojson::value(true);
 						sprops[L"ensureRunning"] = picojson::value(true);
-						sysvinit[servname] = picojson::value(sprops);
+						sysvinit[servname.name] = picojson::value(sprops);
 					}
 				}
 
@@ -397,12 +465,38 @@ void addStack(
 					for (size_t idx = 0; idx < commandList.size(); idx++)
 					{
 						std::map<std::wstring, picojson::value> cmd;
-						cmd[L"command"] = picojson::value(commandList[idx]);
+						cmd[L"command"] = picojson::value(commandList[idx].command);
+						if (commandList[idx].cwd.size() != 0)
+						{
+							cmd[L"cwd"] = picojson::value(commandList[idx].cwd);
+						}
 						commands[L"cmd" + zeroPad(idx, commandList.size())] = picojson::value(cmd);
 					}
 				}
 
 				config[L"commands"] = picojson::value(commands);
+
+
+
+				std::map<std::wstring, picojson::value> files;
+
+				auto fileList = launchData.getFiles();
+				if (fileList.size() > 0)
+				{
+					for (size_t idx = 0; idx < fileList.size(); idx++)
+					{
+						std::map<std::wstring, picojson::value> fileobj;
+						File file = fileList[idx];
+						fileobj[L"content"] = picojson::value(file.content);
+						fileobj[L"owner"] = picojson::value(file.owner);
+						fileobj[L"group"] = picojson::value(file.group);
+						fileobj[L"mode"] = picojson::value(file.mode);
+						files[file.path] = picojson::value(fileobj);
+					}
+				}
+
+				config[L"files"] = picojson::value(files);
+
 
 
 			init[L"config"] = picojson::value(config);
@@ -428,7 +522,7 @@ void addStack(
 
 }
 
-std::wstring getDirFromFilename(std::wstring filename)
+std::string getDirFromFilename(std::wstring filename)
 {
 	// get current path
 	std::string mbFilename(filename.begin(), filename.end());
@@ -436,9 +530,7 @@ std::wstring getDirFromFilename(std::wstring filename)
 	std::string path = realpath(mbFilename.c_str(), result);
 	std::string dir = path.substr(0, path.find_last_of("/"));
 
-	std::wstring wDir(dir.begin(), dir.end());
-
-	return wDir;
+	return dir;
 }
 
 void importFile(
@@ -453,12 +545,13 @@ void importFile(
 
 	for (const StringLiteralPtr str : p.imports)
 	{
-		importFile(getDirFromFilename(filename) + L"/" + str->getContent(), stackMap, variableMap);
+		chdir(getDirFromFilename(filename).c_str());
+		importFile(str->getContent(), stackMap, variableMap);
 	}
 
 	for (const StringLiteralPtr str : p.absoluteImports)
 	{
-		importFile(L"aws/" + str->getContent(), stackMap, variableMap);
+
 	}
 
 	for (const StackPtr stack : p.stacks)
