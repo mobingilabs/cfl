@@ -23,6 +23,7 @@ struct File
 	std::wstring owner;
 	std::wstring group;
 	std::wstring mode;
+	picojson::value context;
 };
 
 class LaunchData

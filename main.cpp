@@ -221,6 +221,11 @@ void applyMetadata(
 				}
 			}
 
+			if (info.find(L"Context") != info.end())
+			{
+				file.context = info[L"Context"]->asJson(subs);
+			}
+
 			launchData.addFile(file);
 		}
 	}
@@ -488,9 +493,22 @@ void addStack(
 						std::map<std::wstring, picojson::value> fileobj;
 						File file = fileList[idx];
 						fileobj[L"content"] = picojson::value(file.content);
-						fileobj[L"owner"] = picojson::value(file.owner);
-						fileobj[L"group"] = picojson::value(file.group);
-						fileobj[L"mode"] = picojson::value(file.mode);
+						if (file.owner.size() != 0)
+						{
+							fileobj[L"owner"] = picojson::value(file.owner);
+							if (file.context.is<picojson::value::object>())
+							{
+								fileobj[L"context"] = file.context;
+							}
+						}
+						if (file.group.size() != 0)
+						{
+							fileobj[L"group"] = picojson::value(file.group);
+						}
+						if (file.mode.size() != 0)
+						{
+							fileobj[L"mode"] = picojson::value(file.mode);
+						}
 						files[file.path] = picojson::value(fileobj);
 					}
 				}

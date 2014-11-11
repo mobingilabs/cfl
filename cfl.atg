@@ -60,8 +60,7 @@ CHARACTERS
 	anychar   = ANY.
 
 TOKENS
-	ident     = bigletter { bigletter | letter | digit | underscore | colon colon }.
-	typeIdent = letter { bigletter | letter | digit | underscore }.
+	ident     = (letter | bigletter) { bigletter | letter | digit | underscore | colon colon }.
 	number    = digit { digit } [ "." digit { digit } ] .
 
 	string    = '"' { stringCh | '\\' printable } '"'.
@@ -236,7 +235,7 @@ ident																(. name = t->val; .)
 
 StackParameter<StackPtr stack> =									(. std::wstring type, name; .)
 																	(. ExpressionPtr expr; .)
-typeIdent															(. type = t->val; .)
+ident																(. type = t->val; .)
 ident																(. name = t->val; .)
 																	(. ParameterPtr ptr(new Parameter(name, type)); .)
 																	(. stack->AddParameter(ptr); .)
