@@ -66,6 +66,20 @@ public:
 	{
 		return MEMBER_CALL;
 	}
+
+	virtual std::wstring getType(const Substitution& subs) const
+	{
+		std::wstring keyname = record + L"." + member;
+
+		if (subs.HasTypeMapping(keyname)) 
+		{
+			return subs.GetType(keyname);
+		}
+
+		std::wcerr << keyname << " is not defined" << std::endl;
+
+		exit(EXIT_FAILURE);
+	}
 };
 
 #endif // MEMBERCALL_H

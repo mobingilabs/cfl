@@ -13,6 +13,8 @@
 #include "FunctionCall.h"
 #include "MemberCall.h"
 #include "Metadata.h"
+#include "Mapping.h"
+#include "MappingCall.h"
 
 #include "Variable.h"
 #include "Stack.h"
@@ -29,6 +31,7 @@ typedef std::shared_ptr<Variable> VariablePtr;
 typedef std::shared_ptr<Stack> StackPtr;
 typedef std::shared_ptr<Resource> ResourcePtr;
 typedef std::shared_ptr<Parameter> ParameterPtr;
+typedef std::shared_ptr<Mapping> MappingPtr;
 
 typedef std::shared_ptr<StringLiteral> StringLiteralPtr;
 
@@ -40,6 +43,7 @@ COMPILER CFL
 	std::vector<StackPtr> stacks;
 	std::vector<StringLiteralPtr> imports;
 	std::vector<StringLiteralPtr> absoluteImports;
+	std::vector<MappingPtr> mappings;
 
 CHARACTERS
 	bigletter = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".
@@ -162,15 +166,28 @@ MemberCall<std::wstring &member> =
 ident 																(. member = t->val; .)
 .
 
+MappingCall<ExpressionPtr &expr1, ExpressionPtr &expr2> =
+"["
+Expression<expr1>
+","
+Expression<expr2>
+"]"
+.
+
 Reference<ExpressionPtr &expr> = 									(. std::wstring member; .)
 ident 																(. std::wstring ident = t->val; .)
 																	(. expr = ExpressionPtr(new SymbolReference(ident)); .)
 																	(. ParameterList paramList; .)
+																	(. ExpressionPtr expr1; .)
+																	(. ExpressionPtr expr2; .)
 [
 	FunctionCall<paramList>											(. expr = ExpressionPtr(new class FunctionCall(ident, paramList)); .)
 	| MemberCall<member>											(. expr = ExpressionPtr(new class MemberCall(ident, member)); .)
+	| MappingCall<expr1, expr2>										(. expr = ExpressionPtr(new class MappingCall(ident, expr1, expr2)); .)
 ]
 .
+
+
 
 Expression<ExpressionPtr &expr> = 
 ( Literal<expr> | Reference<expr> )
@@ -282,11 +299,39 @@ ident																(. stack = StackPtr(new Stack(t->val)); .)
 "}"
 .
 
+MappingRow<MappingPtr& mapping> =									(. std::vector< std::wstring > data; .)
+string 																(. std::wstring rowname = StringLiteral(t->val).getContent(); .)
+"="
+string 																(. data.push_back(StringLiteral(t->val).getContent()); .)
+{
+	"," string														(. data.push_back(StringLiteral(t->val).getContent()); .)
+}
+";"																	(. mapping->AddRow(rowname, data); .)
+.
+
+MappingDeclaration<MappingPtr& mapping> =
+"MAPPING"
+ident 																(. mapping = MappingPtr(new Mapping(t->val)); .)
+"("
+	string 															(. mapping->AddColumn(StringLiteral(t->val).getContent()); .)
+	{
+		"," string													(. mapping->AddColumn(StringLiteral(t->val).getContent()); .)
+	}
+")"
+"{"
+	{
+		MappingRow<mapping>
+	}
+"}"
+.
+
 Statement =															(. VariablePtr variable; .)
 																	(. StackPtr stack; .)
+																	(. MappingPtr mapping; .)
 (
 	VariableDeclaration<variable>									(. variables.push_back(variable); .)
 	| StackDeclaration<stack>										(. stacks.push_back(stack); .)
+	| MappingDeclaration<mapping>									(. mappings.push_back(mapping); .)
 )
 .
 

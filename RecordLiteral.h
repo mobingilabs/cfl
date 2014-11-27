@@ -38,6 +38,11 @@ public:
 	{
 		return RECORD_LITERAL;
 	}
+
+	virtual std::wstring getType(const Substitution& subs) const
+	{
+		return L"record";
+	}
 };
 
 #endif // RECORDLITERAL_H

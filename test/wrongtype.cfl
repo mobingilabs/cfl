@@ -1,0 +1,15 @@
+---
+wrongtype.cfl
+Demonstrates the error when you don't pass params of the right type
+---
+
+STACK Main (string WoofName)
+{
+	MAKE MakeAnother Cat2 (InstanceId = "nyan")
+
+	RETURN (TheIP = Cat2.Result)
+}
+
+STACK MakeAnother (string InstanceId)
+{
+}

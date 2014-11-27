@@ -7,8 +7,12 @@
 class Substitution
 {
 	std::map<std::wstring, picojson::value> subs;
+	std::map<std::wstring, std::wstring> mappings;
+
+	std::map<std::wstring, std::wstring> symbolTypes;
 
 	class NoSubstitute {};
+	class NotDefined {};
 
 public:
 	Substitution()
@@ -34,6 +38,37 @@ public:
 	bool HasSubstitute(std::wstring str) const
 	{
 		return subs.find(str) != subs.end();
+	}
+
+	void AddMapping(std::wstring str)
+	{
+		mappings[str] = str;
+	}
+
+	bool HasMapping(std::wstring str) const
+	{
+		return mappings.find(str) != mappings.end();
+	}
+
+	void AddTypeMapping(std::wstring str, std::wstring type)
+	{
+		std::wcerr << "typed " << str << " as " << type << std::endl;
+		symbolTypes[str] = type;
+	}
+
+	bool HasTypeMapping(std::wstring str) const
+	{
+		return symbolTypes.find(str) != symbolTypes.end();
+	}
+
+	std::wstring GetType(std::wstring str) const
+	{
+		if (HasTypeMapping(str))
+		{
+			return symbolTypes.find(str)->second;
+		}
+
+		throw NotDefined();
 	}
 };
 

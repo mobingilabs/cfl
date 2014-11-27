@@ -88,6 +88,26 @@ public:
 	{
 		return FUNCTION_CALL;
 	}
+
+	virtual std::wstring getType(const Substitution& subs) const
+	{
+		if (funcName.compare(L"In::GetFile") == 0)
+		{
+			return L"string";
+		}
+
+		if (funcName.compare(L"Fn::Join") == 0)
+		{
+			return L"string";
+		}
+
+		if (funcName.compare(L"In::RefName") == 0)
+		{
+			return L"string";
+		}
+
+		return L"resource";
+	}
 };
 
 #endif // MEMBERCALL_H

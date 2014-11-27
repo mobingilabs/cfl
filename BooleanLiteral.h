@@ -28,6 +28,11 @@ public:
 	{
 		return BOOLEAN_LITERAL;
 	}
+
+	virtual std::wstring getType(const Substitution& subs) const 
+	{
+		return L"boolean";
+	}
 };
 
 #endif // BOOLEANLITERAL_H

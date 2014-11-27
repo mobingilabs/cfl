@@ -39,6 +39,18 @@ public:
 	{
 		return SYMBOL_REFERENCE;
 	}
+
+	virtual std::wstring getType(const Substitution& subs) const
+	{
+		if (subs.HasTypeMapping(symbolName)) 
+		{
+			return subs.GetType(symbolName);
+		}
+
+		std::wcerr << "The symbol '" << symbolName << "' is not defined" << std::endl;
+
+		exit(EXIT_FAILURE);
+	}
 };
 
 #endif // SYMBOLREFERENCE_H

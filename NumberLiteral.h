@@ -21,6 +21,11 @@ public:
 	{
 		return NUMBER_LITERAL;
 	}
+
+	virtual std::wstring getType(const Substitution& subs) const
+	{
+		return L"number";
+	}
 };
 
 #endif // NUMBERLITERAL_H

@@ -36,6 +36,11 @@ public:
 	{
 		return ARRAY_LITERAL;
 	}
+
+	virtual std::wstring getType(const Substitution& subs) const 
+	{
+		return L"array";
+	}
 };
 
 #endif // ARRAYLITERAL_H

@@ -61,6 +61,11 @@ public:
 	{
 		return STRING_LITERAL;
 	}
+
+	virtual std::wstring getType(const Substitution& subs) const
+	{
+		return L"string";
+	}
 };
 
 #endif // STRINGLITERAL_H

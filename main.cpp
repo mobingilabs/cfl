@@ -80,14 +80,25 @@ public:
 void checkParameters(
 	std::wstring stackName,
 	std::map<std::wstring, std::shared_ptr<Expression>> args, 
-	std::map<std::wstring, ParameterPtr> params)
+	std::map<std::wstring, ParameterPtr> params,
+	const Substitution& subs)
 {
 	// remove params that have been argumented
 	for (auto argkvpair : args)
 	{
-		if (params.find(argkvpair.first) != params.end())
+		std::wstring paramName = argkvpair.first;
+		std::shared_ptr<Expression> expression = argkvpair.second;
+
+		if (params.find(paramName) != params.end())
 		{
-			params.erase(argkvpair.first);
+			// check type
+			if (expression->getType(subs).compare(params[paramName]->getType()) != 0)
+			{
+				std::wcerr << "Argument to " << paramName << " has the wrong type. Should be: '" << params[paramName]->getType() << "' but is '" << expression->getType(subs) << "' instead" << std::endl;
+				exit(EXIT_FAILURE);
+			}
+
+			params.erase(paramName);
 		}
 		else
 		{
@@ -105,9 +116,16 @@ void checkParameters(
 		}
 	}
 
+	// give errors if the params are bad
 	if (params.size() > 0)
 	{
 		std::wcerr << L"Not enough arguments to stack " << stackName << std::endl;
+
+		for (auto param : params)
+		{
+			std::wcerr << param.second->getName() << " not defined" << std::endl;
+		}
+		
 		exit(EXIT_FAILURE);
 	}
 }
@@ -252,6 +270,8 @@ void addStack(
 		std::wstring keyname = stack->getName() + L"." + kv.first;
 		Info<ParameterPtr> paramInfo = {kv.first, stack, kv.second};
 		parameters[keyname] = paramInfo;
+
+		subs.AddTypeMapping(kv.first, kv.second->getType());
 	}
 
 	for (auto& res : stack->getResources())
@@ -268,7 +288,7 @@ void addStack(
 			StackPtr calledStack = stackMap[res->getType()];
 
 			// Perform parameter-checking
-			checkParameters(calledStack->getName(), res->getProperties(), calledStack->getParameters());
+			checkParameters(calledStack->getName(), res->getProperties(), calledStack->getParameters(), subs);
 
 			// Apply defaults
 			for (auto& paramkv : calledStack->getParameters())
@@ -277,6 +297,7 @@ void addStack(
 				{
 					newSubs.Add(paramkv.second->getName(), paramkv.second->getDefault()->asJson(subs));
 				}
+
 			}
 
 			// Apply params
@@ -324,6 +345,7 @@ void addStack(
 			{
 				std::wstring outputRef = res->getName() + L"." + outputkv.second.name;
 				subs.Add(outputRef, outputkv.second.item->asJson(newSubs));
+				subs.AddTypeMapping(outputRef, outputkv.second.item->getType(newSubs));
 			}
 		}
 		else if (res->getType().compare(0, awsPrefix.size(), awsPrefix) == 0)
@@ -333,6 +355,8 @@ void addStack(
 
 			Info<ResourcePtr> resInfo = {res->getName(), stack, res};
 			resources[keyname] = resInfo;
+
+			subs.AddTypeMapping(res->getName(), L"string");
 		}
 		else
 		{
@@ -554,7 +578,9 @@ std::string getDirFromFilename(std::wstring filename)
 void importFile(
 	std::wstring filename, 
 	std::map< std::wstring, StackPtr >& stackMap,
-	std::map< std::wstring, VariablePtr >& variableMap)
+	std::map< std::wstring, VariablePtr >& variableMap,
+	std::map< std::wstring, MappingPtr >& mappingMap
+	)
 {
 	std::shared_ptr<Scanner> s(new Scanner(filename.c_str()));
 	Parser p(s.get());
@@ -564,7 +590,7 @@ void importFile(
 	for (const StringLiteralPtr str : p.imports)
 	{
 		chdir(getDirFromFilename(filename).c_str());
-		importFile(str->getContent(), stackMap, variableMap);
+		importFile(str->getContent(), stackMap, variableMap, mappingMap);
 	}
 
 	for (const StringLiteralPtr str : p.absoluteImports)
@@ -581,6 +607,11 @@ void importFile(
 	{
 		variableMap[var->getName()] = var;
 	}
+
+	for (const MappingPtr mapping : p.mappings)
+	{
+		mappingMap[mapping->getName()] = mapping;
+	}
 }
 
 // returns outputs
@@ -588,6 +619,7 @@ picojson::value parse(std::string filename, std::wstring stackName)
 {
 	std::map< std::wstring, StackPtr > stackMap;
 	std::map< std::wstring, VariablePtr > variableMap;
+	std::map< std::wstring, MappingPtr > mappingMap;
 
 	std::map< std::wstring, Info<ParameterPtr> > parameters;
 	std::map< std::wstring, Info<ExpressionPtr> > outputs;
@@ -632,7 +664,7 @@ picojson::value parse(std::string filename, std::wstring stackName)
 		}
 	}
 
-	importFile(wFilename, stackMap, variableMap);
+	importFile(wFilename, stackMap, variableMap, mappingMap);
 
 	if (stackMap.find(stackName) == stackMap.end())
 	{
@@ -643,7 +675,20 @@ picojson::value parse(std::string filename, std::wstring stackName)
 	for (auto kvpair : variableMap)
 	{
 		subs.Add(kvpair.first, kvpair.second->getExpr()->asJson(subs));
+		subs.AddTypeMapping(kvpair.first, kvpair.second->getExpr()->getType(subs));
 	}
+
+	if (mappingMap.size() != 0)
+	{
+		std::map<std::wstring, picojson::value> mappingList;
+		for (auto kvpair : mappingMap)
+		{
+			mappingList[kvpair.first] = kvpair.second->asJson();
+			subs.AddMapping(kvpair.first);
+		}
+		theTemplate[L"Mappings"] = picojson::value(mappingList);
+	}
+
 
 	std::map<std::wstring, picojson::value> parameterList;
 	std::map<std::wstring, picojson::value> resourceList;
@@ -699,7 +744,7 @@ int main(int argc, char** argv)
 
 	picojson::value v = parse(argv[1], stackName);
 
-	std::wcout << v.serialize(true) << std::endl;
+	std::wcout << v.serialize() << std::endl;
 
 	return EXIT_SUCCESS;
 }
