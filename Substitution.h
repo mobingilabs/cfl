@@ -52,7 +52,7 @@ public:
 
 	void AddTypeMapping(std::wstring str, std::wstring type)
 	{
-		std::wcerr << "typed " << str << " as " << type << std::endl;
+		//std::wcerr << "typed " << str << " as " << type << std::endl;
 		symbolTypes[str] = type;
 	}
 
