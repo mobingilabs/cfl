@@ -41,25 +41,9 @@ typedef std::shared_ptr<Mapping> MappingPtr;
 typedef std::shared_ptr<StringLiteral> StringLiteralPtr;
 
 
+#include <string>
 #include "Scanner.h"
 
-
-
-class Errors {
-public:
-	int count;			// number of errors detected
-
-	Errors();
-	void SynErr(int line, int col, int n);
-	void Error(int line, int col, const wchar_t *s);
-	void Warning(int line, int col, const wchar_t *s);
-	void Warning(const wchar_t *s);
-	void Exception(const wchar_t *s);
-
-}; // Errors
-
-class Parser {
-private:
 	enum {
 		_EOF=0,
 		_ident=1,
@@ -69,28 +53,595 @@ private:
 		_char=5,
 		_nextLine=6,
 		_comments=7,
-		_ddtSym=28,
-		_optionSym=29
+		_ddtSym=39,
+		_optionSym=40
 	};
-	int maxT;
 
-	Token *dummyToken;
+
+
+class Errors {
+public:
+	int count;			// number of errors detected
+
+	Errors() {
+		count = 0;
+	}
+
+	void SynErr(int line, int col, int n) {
+		std::wstring s;
+		switch (n) {
+			case 0: s = CocoUtil::coco_string_create(L"EOF expected"); break;
+			case 1: s = CocoUtil::coco_string_create(L"ident expected"); break;
+			case 2: s = CocoUtil::coco_string_create(L"number expected"); break;
+			case 3: s = CocoUtil::coco_string_create(L"string expected"); break;
+			case 4: s = CocoUtil::coco_string_create(L"absimp expected"); break;
+			case 5: s = CocoUtil::coco_string_create(L"char expected"); break;
+			case 6: s = CocoUtil::coco_string_create(L"nextLine expected"); break;
+			case 7: s = CocoUtil::coco_string_create(L"comments expected"); break;
+			case 8: s = CocoUtil::coco_string_create(L"\"true\" expected"); break;
+			case 9: s = CocoUtil::coco_string_create(L"\"false\" expected"); break;
+			case 10: s = CocoUtil::coco_string_create(L"\"[\" expected"); break;
+			case 11: s = CocoUtil::coco_string_create(L"\",\" expected"); break;
+			case 12: s = CocoUtil::coco_string_create(L"\"]\" expected"); break;
+			case 13: s = CocoUtil::coco_string_create(L"\":\" expected"); break;
+			case 14: s = CocoUtil::coco_string_create(L"\"{\" expected"); break;
+			case 15: s = CocoUtil::coco_string_create(L"\"}\" expected"); break;
+			case 16: s = CocoUtil::coco_string_create(L"\"(\" expected"); break;
+			case 17: s = CocoUtil::coco_string_create(L"\")\" expected"); break;
+			case 18: s = CocoUtil::coco_string_create(L"\".\" expected"); break;
+			case 19: s = CocoUtil::coco_string_create(L"\"==\" expected"); break;
+			case 20: s = CocoUtil::coco_string_create(L"\"!=\" expected"); break;
+			case 21: s = CocoUtil::coco_string_create(L"\">\" expected"); break;
+			case 22: s = CocoUtil::coco_string_create(L"\"<\" expected"); break;
+			case 23: s = CocoUtil::coco_string_create(L"\">=\" expected"); break;
+			case 24: s = CocoUtil::coco_string_create(L"\"<=\" expected"); break;
+			case 25: s = CocoUtil::coco_string_create(L"\"+\" expected"); break;
+			case 26: s = CocoUtil::coco_string_create(L"\"-\" expected"); break;
+			case 27: s = CocoUtil::coco_string_create(L"\"*\" expected"); break;
+			case 28: s = CocoUtil::coco_string_create(L"\"/\" expected"); break;
+			case 29: s = CocoUtil::coco_string_create(L"\"++\" expected"); break;
+			case 30: s = CocoUtil::coco_string_create(L"\"SET\" expected"); break;
+			case 31: s = CocoUtil::coco_string_create(L"\"=\" expected"); break;
+			case 32: s = CocoUtil::coco_string_create(L"\"MAKE\" expected"); break;
+			case 33: s = CocoUtil::coco_string_create(L"\"RETURN\" expected"); break;
+			case 34: s = CocoUtil::coco_string_create(L"\"STACK\" expected"); break;
+			case 35: s = CocoUtil::coco_string_create(L"\";\" expected"); break;
+			case 36: s = CocoUtil::coco_string_create(L"\"MAPPING\" expected"); break;
+			case 37: s = CocoUtil::coco_string_create(L"\"IMPORT\" expected"); break;
+			case 38: s = CocoUtil::coco_string_create(L"??? expected"); break;
+
+			default:
+			{
+				std::wstringstream ss;
+				ss << "error " << n;
+				s = ss.str();
+			}
+			break;
+		}
+		fwprintf(stderr, L"-- line %d col %d: %ls\n", line, col, s.c_str());
+		CocoUtil::coco_string_delete(s);
+		count++;
+	}
+
+	void Error(int line, int col, const std::wstring s) {
+		fwprintf(stderr, L"-- line %d col %d: %ls\n", line, col, s.c_str());
+		count++;
+	}
+
+	void Warning(int line, int col, const std::wstring s) {
+		fwprintf(stderr, L"-- line %d col %d: %ls\n", line, col, s.c_str());
+	}
+
+	void Warning(const std::wstring s) {
+		fwprintf(stderr, L"%ls\n", s.c_str());
+	}
+
+	void Exception(const std::wstring s) {
+		fwprintf(stderr, L"%ls", s.c_str()); 
+		exit(1);
+	}
+						
+
+}; // Errors
+
+
+class Parser {
+private:
+
+	std::shared_ptr<Token> dummyToken;
 	int errDist;
 	int minErrDist;
+	int maxT;
 
-	void SynErr(int n);
-	void Get();
-	void Expect(int n);
-	bool StartOf(int s);
-	void ExpectWeak(int n, int follow);
-	bool WeakSeparator(int n, int syFol, int repFol);
+
+	void SynErr(int n) {
+		if (errDist >= minErrDist) errors->SynErr(la->line, la->col, n);
+		errDist = 0;
+	}
+
+
+	void Get() {
+		for (;;) {
+			t = la;
+			la = scanner->Scan();
+			if (la->kind <= maxT) { ++errDist; break; }
+			if (la->kind == _ddtSym) {
+		}
+		if (la->kind == _optionSym) {
+		}
+
+			if (dummyToken != t) {
+				dummyToken->kind = t->kind;
+				dummyToken->pos = t->pos;
+				dummyToken->col = t->col;
+				dummyToken->line = t->line;
+				dummyToken->next = NULL;
+				dummyToken->val = t->val;
+				t = dummyToken;
+			}
+			la = t;
+		}
+	}
+
+	void Expect(int n) {
+		if (la->kind==n) Get(); else { SynErr(n); }
+	}
+
+	void ExpectWeak(int n, int follow) {
+		if (la->kind == n) Get();
+		else {
+			SynErr(n);
+			while (!StartOf(follow)) Get();
+		}
+	}
+
+	bool WeakSeparator(int n, int syFol, int repFol) {
+		if (la->kind == n) {Get(); return true;}
+		else if (StartOf(repFol)) {return false;}
+		else {
+			SynErr(n);
+			while (!(StartOf(syFol) || StartOf(repFol) || StartOf(0))) {
+				Get();
+			}
+			return StartOf(syFol);
+		}
+	}
+
+
+	void Boolean(ExpressionPtr &expr) {
+		if (la->kind == 8 /* "true" */) {
+			Get();
+			expr = ExpressionPtr(new BooleanLiteral(true)); 
+		} else if (la->kind == 9 /* "false" */) {
+			Get();
+			expr = ExpressionPtr(new BooleanLiteral(false)); 
+		} else SynErr(39);
+}
+
+void String(ExpressionPtr &expr) {
+		Expect(_string);
+		expr = ExpressionPtr(new StringLiteral(t->val)); 
+}
+
+void Number(ExpressionPtr &expr) {
+		Expect(_number);
+		expr = ExpressionPtr(new NumberLiteral(std::stold(t->val))); 
+}
+
+void Array(ExpressionPtr &expr) {
+		ExpressionPtr member; 
+		ArrayLiteral* arr = new ArrayLiteral(); 
+		expr = ExpressionPtr(arr); 
+		Expect(10 /* "[" */);
+		if (StartOf(1)) {
+			Expression(member);
+			arr->Add(member); 
+			while (la->kind == 11 /* "," */) {
+				Get();
+				Expression(member);
+				arr->Add(member); 
+			}
+		}
+		Expect(12 /* "]" */);
+}
+
+void Expression(ExpressionPtr &expr) {
+		Term(expr);
+		while (StartOf(2)) {
+			BinaryOperator();
+			Term(expr);
+		}
+}
+
+void RecordField(RecordFieldPtr &record) {
+		std::wstring key; ExpressionPtr value; 
+		Expect(_ident);
+		key = t->val; 
+		Expect(13 /* ":" */);
+		Expression(value);
+		record = RecordFieldPtr(new class RecordField(key, value)); 
+}
+
+void Record(ExpressionPtr &expr) {
+		RecordFieldPtr record; 
+		RecordLiteral* rec = new RecordLiteral(); 
+		expr = ExpressionPtr(rec);
+		Expect(14 /* "{" */);
+		if (la->kind == _ident) {
+			RecordField(record);
+			rec->Add(record); 
+			while (la->kind == 11 /* "," */) {
+				Get();
+				RecordField(record);
+				rec->Add(record); 
+			}
+		}
+		Expect(15 /* "}" */);
+}
+
+void Literal(ExpressionPtr &expr) {
+		if (la->kind == _string) {
+			String(expr);
+		} else if (la->kind == _number) {
+			Number(expr);
+		} else if (la->kind == 10 /* "[" */) {
+			Array(expr);
+		} else if (la->kind == 14 /* "{" */) {
+			Record(expr);
+		} else if (la->kind == 8 /* "true" */ || la->kind == 9 /* "false" */) {
+			Boolean(expr);
+		} else SynErr(40);
+}
+
+void FunctionCall(ParameterList &list) {
+		ExpressionPtr expr; 
+		Expect(16 /* "(" */);
+		if (StartOf(1)) {
+			Expression(expr);
+			list.push_back(expr); 
+			while (la->kind == 11 /* "," */) {
+				Get();
+				Expression(expr);
+				list.push_back(expr); 
+			}
+		}
+		Expect(17 /* ")" */);
+}
+
+void MemberCall(std::wstring &member) {
+		Expect(18 /* "." */);
+		Expect(_ident);
+		member = t->val; 
+}
+
+void MappingCall(ExpressionPtr &expr1, ExpressionPtr &expr2) {
+		Expect(10 /* "[" */);
+		Expression(expr1);
+		Expect(11 /* "," */);
+		Expression(expr2);
+		Expect(12 /* "]" */);
+}
+
+void Reference(ExpressionPtr &expr) {
+		std::wstring member; 
+		Expect(_ident);
+		std::wstring ident = t->val; 
+		expr = ExpressionPtr(new SymbolReference(ident)); 
+		ParameterList paramList; 
+		ExpressionPtr expr1; 
+		ExpressionPtr expr2; 
+		if (la->kind == 10 /* "[" */ || la->kind == 16 /* "(" */ || la->kind == 18 /* "." */) {
+			if (la->kind == 16 /* "(" */) {
+				FunctionCall(paramList);
+				expr = ExpressionPtr(new class FunctionCall(ident, paramList)); 
+			} else if (la->kind == 18 /* "." */) {
+				MemberCall(member);
+				expr = ExpressionPtr(new class MemberCall(ident, member)); 
+			} else {
+				MappingCall(expr1, expr2);
+				expr = ExpressionPtr(new class MappingCall(ident, expr1, expr2)); 
+			}
+		}
+}
+
+void Term(ExpressionPtr &expr) {
+		if (StartOf(3)) {
+			if (StartOf(4)) {
+				Literal(expr);
+			} else {
+				Reference(expr);
+			}
+		} else if (la->kind == 16 /* "(" */) {
+			Get();
+			Expression(expr);
+			Expect(17 /* ")" */);
+		} else SynErr(41);
+}
+
+void BooleanBinaryOperator() {
+		switch (la->kind) {
+		case 19 /* "==" */: {
+			Get();
+			break;
+		}
+		case 20 /* "!=" */: {
+			Get();
+			break;
+		}
+		case 21 /* ">" */: {
+			Get();
+			break;
+		}
+		case 22 /* "<" */: {
+			Get();
+			break;
+		}
+		case 23 /* ">=" */: {
+			Get();
+			break;
+		}
+		case 24 /* "<=" */: {
+			Get();
+			break;
+		}
+		default: SynErr(42); break;
+		}
+}
+
+void ArithmeticBinaryOperator() {
+		if (la->kind == 25 /* "+" */) {
+			Get();
+		} else if (la->kind == 26 /* "-" */) {
+			Get();
+		} else if (la->kind == 27 /* "*" */) {
+			Get();
+		} else if (la->kind == 28 /* "/" */) {
+			Get();
+		} else SynErr(43);
+}
+
+void StringBinaryOperator() {
+		Expect(29 /* "++" */);
+}
+
+void BinaryOperator() {
+		if (StartOf(5)) {
+			BooleanBinaryOperator();
+		} else if (StartOf(6)) {
+			ArithmeticBinaryOperator();
+		} else if (la->kind == 29 /* "++" */) {
+			StringBinaryOperator();
+		} else SynErr(44);
+}
+
+void VariableDeclaration(VariablePtr &variable) {
+		ExpressionPtr expr; 
+		Expect(30 /* "SET" */);
+		Expect(_ident);
+		std::wstring identifier = t->val; 
+		Expect(31 /* "=" */);
+		Expression(expr);
+		variable = VariablePtr(new Variable(identifier, expr)); 
+}
+
+void Property(ResourcePtr resource) {
+		ExpressionPtr expr; 
+		std::wstring name; 
+		Expect(_ident);
+		name = t->val; 
+		Expect(31 /* "=" */);
+		Expression(expr);
+		resource->AddProperty(name, expr); 
+}
+
+void ExtraMetadataInfo(MetadataPtr& metadata) {
+		ExpressionPtr expr; 
+		Expect(_ident);
+		std::wstring key = t->val; 
+		Expect(13 /* ":" */);
+		Expression(expr);
+		metadata->addInfo(key, expr); 
+}
+
+void MetadataDeclaration(MetadataPtr& metadata) {
+		ExpressionPtr expr; 
+		Expect(10 /* "[" */);
+		Expect(_ident);
+		std::wstring key = t->val; 
+		Expect(13 /* ":" */);
+		Expression(expr);
+		metadata = MetadataPtr(new Metadata(key, expr)); 
+		while (la->kind == 11 /* "," */) {
+			Get();
+			ExtraMetadataInfo(metadata);
+		}
+		Expect(12 /* "]" */);
+}
+
+void MetadataListing(MetadataList& list) {
+		MetadataPtr metadata; 
+		while (la->kind == 10 /* "[" */) {
+			MetadataDeclaration(metadata);
+			list.push_back(metadata); 
+		}
+}
+
+void ResourceDeclaration(StackPtr stack) {
+		std::wstring type, name; 
+		MetadataList list; 
+		MetadataListing(list);
+		Expect(32 /* "MAKE" */);
+		Expect(_ident);
+		type = t->val; 
+		Expect(_ident);
+		name = t->val; 
+		ResourcePtr resource = ResourcePtr(new Resource(type, name, list)); 
+		if (la->kind == 16 /* "(" */) {
+			Get();
+			if (la->kind == _ident) {
+				Property(resource);
+				while (la->kind == 11 /* "," */) {
+					Get();
+					Property(resource);
+				}
+			}
+			Expect(17 /* ")" */);
+		}
+		stack->AddResource(resource); 
+}
+
+void StackParameter(StackPtr stack) {
+		std::wstring type, name; 
+		ExpressionPtr expr; 
+		Expect(_ident);
+		type = t->val; 
+		Expect(_ident);
+		name = t->val; 
+		ParameterPtr ptr(new Parameter(name, type)); 
+		stack->AddParameter(ptr); 
+		if (la->kind == 31 /* "=" */) {
+			Get();
+			Expression(expr);
+			ptr->setDefault(expr); 
+		}
+}
+
+void OutputParameter(StackPtr stack) {
+		ExpressionPtr expr; 
+		std::wstring name; 
+		Expect(_ident);
+		name = t->val; 
+		Expect(31 /* "=" */);
+		Expression(expr);
+		stack->AddOutput(name, expr); 
+}
+
+void OutputDeclaration(StackPtr stack) {
+		Expect(33 /* "RETURN" */);
+		Expect(16 /* "(" */);
+		OutputParameter(stack);
+		while (la->kind == 11 /* "," */) {
+			Get();
+			OutputParameter(stack);
+		}
+		Expect(17 /* ")" */);
+}
+
+void StackDeclaration(StackPtr &stack) {
+		Expect(34 /* "STACK" */);
+		Expect(_ident);
+		stack = StackPtr(new Stack(t->val)); 
+		Expect(16 /* "(" */);
+		if (la->kind == _ident) {
+			StackParameter(stack);
+			while (la->kind == 11 /* "," */) {
+				Get();
+				StackParameter(stack);
+			}
+		}
+		Expect(17 /* ")" */);
+		Expect(14 /* "{" */);
+		while (la->kind == 10 /* "[" */ || la->kind == 32 /* "MAKE" */) {
+			ResourceDeclaration(stack);
+		}
+		if (la->kind == 33 /* "RETURN" */) {
+			OutputDeclaration(stack);
+		}
+		Expect(15 /* "}" */);
+}
+
+void MappingRow(MappingPtr& mapping) {
+		std::vector< std::wstring > data; 
+		Expect(_string);
+		std::wstring rowname = StringLiteral(t->val).getContent(); 
+		Expect(31 /* "=" */);
+		Expect(_string);
+		data.push_back(StringLiteral(t->val).getContent()); 
+		while (la->kind == 11 /* "," */) {
+			Get();
+			Expect(_string);
+			data.push_back(StringLiteral(t->val).getContent()); 
+		}
+		Expect(35 /* ";" */);
+		mapping->AddRow(rowname, data); 
+}
+
+void MappingDeclaration(MappingPtr& mapping) {
+		Expect(36 /* "MAPPING" */);
+		Expect(_ident);
+		mapping = MappingPtr(new Mapping(t->val)); 
+		Expect(16 /* "(" */);
+		Expect(_string);
+		mapping->AddColumn(StringLiteral(t->val).getContent()); 
+		while (la->kind == 11 /* "," */) {
+			Get();
+			Expect(_string);
+			mapping->AddColumn(StringLiteral(t->val).getContent()); 
+		}
+		Expect(17 /* ")" */);
+		Expect(14 /* "{" */);
+		while (la->kind == _string) {
+			MappingRow(mapping);
+		}
+		Expect(15 /* "}" */);
+}
+
+void Statement() {
+		VariablePtr variable; 
+		StackPtr stack; 
+		MappingPtr mapping; 
+		if (la->kind == 30 /* "SET" */) {
+			VariableDeclaration(variable);
+			variables.push_back(variable); 
+		} else if (la->kind == 34 /* "STACK" */) {
+			StackDeclaration(stack);
+			stacks.push_back(stack); 
+		} else if (la->kind == 36 /* "MAPPING" */) {
+			MappingDeclaration(mapping);
+			mappings.push_back(mapping); 
+		} else SynErr(45);
+}
+
+void Description() {
+		Expect(_comments);
+		description = t->val; 
+}
+
+void ImportStatement() {
+		Expect(37 /* "IMPORT" */);
+		if (la->kind == _string) {
+			Get();
+			StringLiteralPtr str = StringLiteralPtr(new StringLiteral(t->val)); 
+			imports.push_back(str); 
+		} else if (la->kind == _absimp) {
+			Get();
+			StringLiteralPtr str = StringLiteralPtr(new StringLiteral(t->val)); 
+			absoluteImports.push_back(str); 
+		} else SynErr(46);
+}
+
+void CFL() {
+		if (la->kind == _comments) {
+			Description();
+		}
+		while (la->kind == 37 /* "IMPORT" */) {
+			ImportStatement();
+		}
+		while (la->kind == 30 /* "SET" */ || la->kind == 34 /* "STACK" */ || la->kind == 36 /* "MAPPING" */) {
+			Statement();
+		}
+		Expect(_EOF);
+}
+
+
 
 public:
-	Scanner *scanner;
-	Errors  *errors;
 
-	Token *t;			// last recognized token
-	Token *la;			// lookahead token
+	std::shared_ptr<Scanner> scanner;
+	std::shared_ptr<Errors>  errors;
+
+	std::shared_ptr<Token> t;			// last recognized token
+	std::shared_ptr<Token> la;			// lookahead token
 
 std::wstring description = L"Created using git@github.com:davidsiaw/cfl. Since this is generated code, your changes will likely be replaced.";
 
@@ -102,42 +653,151 @@ std::wstring description = L"Created using git@github.com:davidsiaw/cfl. Since t
 
 
 
-	Parser(Scanner *scanner);
-	~Parser();
-	void SemErr(const wchar_t* msg);
+	// If the user declared a method Init and a mehtod Destroy they should
+	// be called in the contructur and the destructor respctively.
+	//
+	// The following templates are used to recognize if the user declared
+	// the methods Init and Destroy.
 
-	void Boolean(ExpressionPtr &expr);
-	void String(ExpressionPtr &expr);
-	void Number(ExpressionPtr &expr);
-	void Array(ExpressionPtr &expr);
-	void Expression(ExpressionPtr &expr);
-	void RecordField(RecordFieldPtr &record);
-	void Record(ExpressionPtr &expr);
-	void Literal(ExpressionPtr &expr);
-	void FunctionCall(ParameterList &list);
-	void MemberCall(std::wstring &member);
-	void MappingCall(ExpressionPtr &expr1, ExpressionPtr &expr2);
-	void Reference(ExpressionPtr &expr);
-	void VariableDeclaration(VariablePtr &variable);
-	void Property(ResourcePtr resource);
-	void ExtraMetadataInfo(MetadataPtr& metadata);
-	void MetadataDeclaration(MetadataPtr& metadata);
-	void MetadataListing(MetadataList& list);
-	void ResourceDeclaration(StackPtr stack);
-	void StackParameter(StackPtr stack);
-	void OutputParameter(StackPtr stack);
-	void OutputDeclaration(StackPtr stack);
-	void StackDeclaration(StackPtr &stack);
-	void MappingRow(MappingPtr& mapping);
-	void MappingDeclaration(MappingPtr& mapping);
-	void Statement();
-	void Description();
-	void ImportStatement();
-	void CFL();
+	template<typename T>
+	struct ParserInitExistsRecognizer {
+		template<typename U, void (U::*)() = &U::Init>
+		struct ExistsIfInitIsDefinedMarker{};
 
-	void Parse();
+		struct InitIsMissingType {
+			char dummy1;
+		};
+		
+		struct InitExistsType {
+			char dummy1; char dummy2;
+		};
+
+		// exists always
+		template<typename U>
+		static InitIsMissingType is_here(...);
+
+		// exist only if ExistsIfInitIsDefinedMarker is defined
+		template<typename U>
+		static InitExistsType is_here(ExistsIfInitIsDefinedMarker<U>*);
+
+		enum { InitExists = (sizeof(is_here<T>(NULL)) == sizeof(InitExistsType)) };
+	};
+
+	template<typename T>
+	struct ParserDestroyExistsRecognizer {
+		template<typename U, void (U::*)() = &U::Destroy>
+		struct ExistsIfDestroyIsDefinedMarker{};
+
+		struct DestroyIsMissingType {
+			char dummy1;
+		};
+		
+		struct DestroyExistsType {
+			char dummy1; char dummy2;
+		};
+
+		// exists always
+		template<typename U>
+		static DestroyIsMissingType is_here(...);
+
+		// exist only if ExistsIfDestroyIsDefinedMarker is defined
+		template<typename U>
+		static DestroyExistsType is_here(ExistsIfDestroyIsDefinedMarker<U>*);
+
+		enum { DestroyExists = (sizeof(is_here<T>(NULL)) == sizeof(DestroyExistsType)) };
+	};
+
+	// The folloing templates are used to call the Init and Destroy methods if they exist.
+
+	// Generic case of the ParserInitCaller, gets used if the Init method is missing
+	template<typename T, bool = ParserInitExistsRecognizer<T>::InitExists>
+	struct ParserInitCaller {
+		static void CallInit(T *t) {
+			// nothing to do
+		}
+	};
+
+	// True case of the ParserInitCaller, gets used if the Init method exists
+	template<typename T>
+	struct ParserInitCaller<T, true> {
+		static void CallInit(T *t) {
+			t->Init();
+		}
+	};
+
+	// Generic case of the ParserDestroyCaller, gets used if the Destroy method is missing
+	template<typename T, bool = ParserDestroyExistsRecognizer<T>::DestroyExists>
+	struct ParserDestroyCaller {
+		static void CallDestroy(T *t) {
+			// nothing to do
+		}
+	};
+
+	// True case of the ParserDestroyCaller, gets used if the Destroy method exists
+	template<typename T>
+	struct ParserDestroyCaller<T, true> {
+		static void CallDestroy(T *t) {
+			t->Destroy();
+		}
+	};
+
+	void Parse() {
+		t = NULL;
+		la = dummyToken = std::shared_ptr<Token>(new Token());
+		la->val = CocoUtil::coco_string_create(L"Dummy Token");
+		Get();
+		CFL();
+	Expect(0);
+	}
+
+	Parser(std::shared_ptr<Scanner> scanner) {
+		maxT = 38;
+
+		ParserInitCaller<Parser>::CallInit(this);
+		dummyToken = NULL;
+		t = la = NULL;
+		minErrDist = 2;
+		errDist = minErrDist;
+		this->scanner = scanner;
+		errors = std::shared_ptr<Errors>(new Errors());
+	}
+
+
+	~Parser() {
+		ParserDestroyCaller<Parser>::CallDestroy(this);
+	}
+
+	void SemErr(const std::wstring msg) {
+		if (errDist >= minErrDist) errors->Error(t->line, t->col, msg);
+		errDist = 0;
+	}
+
+private:
+
+	bool StartOf(int s) {
+		const bool T = true;
+		const bool x = false;
+
+		static bool set[7][40] = {
+		{T,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x},
+		{x,T,T,T, x,x,x,x, T,T,T,x, x,x,T,x, T,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x},
+		{x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,T, T,T,T,T, T,T,T,T, T,T,x,x, x,x,x,x, x,x,x,x},
+		{x,T,T,T, x,x,x,x, T,T,T,x, x,x,T,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x},
+		{x,x,T,T, x,x,x,x, T,T,T,x, x,x,T,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x},
+		{x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,T, T,T,T,T, T,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x},
+		{x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,T,T,T, T,x,x,x, x,x,x,x, x,x,x,x}
+	};
+
+
+
+		return set[s][la->kind];
+	}
+
 
 }; // end Parser
+
+
+
 
 
 

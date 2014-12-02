@@ -607,7 +607,7 @@ class CFL
 		)
 	{
 		std::shared_ptr<Scanner> s(new Scanner((const unsigned char *)cfl.c_str(), cfl.length()));
-		Parser p(s.get());
+		Parser p(s);
 
 		p.Parse();
 
@@ -655,7 +655,7 @@ public:
 
 		std::wstring wFilename(filename.begin(), filename.end());
 		std::shared_ptr<Scanner> s(new Scanner(wFilename.c_str()));
-		Parser p(s.get());
+		Parser p(s);
 
 		p.Parse();
 
