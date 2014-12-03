@@ -18,7 +18,7 @@ public:
 
 	}
 
-	virtual picojson::value asJson(const Substitution& subs) const 
+	virtual picojson::value asJson(const Substitution& subs, bool forConditionSection) const 
 	{
 
 		/*
@@ -33,8 +33,8 @@ public:
 			std::vector<picojson::value> arr;
 
 			arr.push_back(picojson::value(record));
-			arr.push_back(expr1->asJson(subs));
-			arr.push_back(expr2->asJson(subs));
+			arr.push_back(expr1->asJson(subs, forConditionSection));
+			arr.push_back(expr2->asJson(subs, forConditionSection));
 
 			obj[L"Fn::FindInMap"] = picojson::value(arr);
 

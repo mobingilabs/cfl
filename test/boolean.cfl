@@ -8,7 +8,9 @@ STACK Main (string Name, string InstanceId)
 {
 	MAKE AWS::EC2::EIP ControlServerIP (InstanceId = InstanceId)
 
-	MAKE Booleaner Kyan (Meow = 2 == 3)
+	MAKE Booleaner Kyan (Meow = 2 == 3 and 5 == 4 or 6 == 7)
+	MAKE Booleaner Kyan2 (Meow = 2 == 3 and (2 == 3 and 6 != 5) == (8 == 9 or 4 == 2) and 8 == 7)
+
 
 	RETURN (Result = ControlServerIP)
 }

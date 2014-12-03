@@ -20,7 +20,7 @@ enum ExpressionForm
 class Expression
 {
 public:
-	virtual picojson::value asJson(const Substitution& subs) const = 0;
+	virtual picojson::value asJson(const Substitution& subs, bool forConditionSection = false) const = 0;
 	virtual ExpressionForm getForm() const = 0;
 	virtual std::wstring getType(const Substitution& subs) const = 0;
 };

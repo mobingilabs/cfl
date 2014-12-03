@@ -32,10 +32,10 @@ public:
 
 	void reduce(std::vector< std::shared_ptr<Expression> >& exprList, std::vector< std::wstring >& operators) const
 	{
-		std::vector< std::wstring > operatorsByPrecedence {
-			L"==", 
-			L"!=", 
-			L"and", 
+		std::vector< std::wstring > operatorsByPrecedence { 
+			L"==",
+			L"!=",
+			L"and",
 			L"or"
 		};
 
@@ -46,7 +46,8 @@ public:
 
 			for (int i=0; i<operators.size(); i++)
 			{
-				if (operators[i].compare(curOp) == 0)
+				if (operators[i].compare(curOp) == 0 &&
+					newOperators.size() + operators.size() - i > 1)
 				{
 					OperationList* opl = new OperationList(ctable, exprList[i]);
 					opl->AddExpression(operators[i], exprList[i + 1]);
@@ -62,6 +63,13 @@ public:
 			}
 
 			newExprList.push_back(exprList[exprList.size() - 1]);
+
+			if (exprList.size() == 2)
+			{
+				break;
+			}
+
+			//std::wcerr << "Result of reduction " << curOp << ": " << exprList.size() << " -> " << newExprList.size() << std::endl;
 
 			exprList = newExprList;
 			operators = newOperators;
@@ -110,32 +118,84 @@ public:
 
 		assert(exprList.size() == 2 && operators.size() == 1);
 
-
 		picojson::value resultingExpression;
 
 		if (operators[0].compare(L"==") == 0)
 		{
-			resultingExpression = generateFuncCall(L"Fn::Equals", exprList[0]->asJson(subs), exprList[1]->asJson(subs));
+			if (exprList[0]->getType(subs).compare(exprList[1]->getType(subs)) != 0)
+			{
+				std::wcerr << "Cannot compare " << exprList[0]->getType(subs) << " and " << exprList[1]->getType(subs) << std::endl;
+				exit(EXIT_FAILURE);
+			}
+
+			if (exprList[0]->getType(subs).compare(L"boolean") == 0)
+			{
+				// Need to perform XNOR for equality of two booleans
+				// because CF templates really really suck
+				resultingExpression = 
+					generateFuncCall(L"Fn::Or", 
+						generateFuncCall(L"Fn::And", 
+							exprList[0]->asJson(subs, true), 
+							exprList[1]->asJson(subs, true)),
+						generateFuncCall(L"Fn::And", 
+							generateFuncCall(L"Fn::Not", exprList[0]->asJson(subs, true)), 
+							generateFuncCall(L"Fn::Not", exprList[1]->asJson(subs, true))
+						)
+
+					);
+			}
+			else
+			{
+				resultingExpression = generateFuncCall(L"Fn::Equals", exprList[0]->asJson(subs, true), exprList[1]->asJson(subs, true));
+			}
+
 		}
 		else if (operators[0].compare(L"!=") == 0)
 		{
-			resultingExpression = generateFuncCall(L"Fn::Equals", exprList[0]->asJson(subs), exprList[1]->asJson(subs));
+			if (exprList[0]->getType(subs).compare(L"boolean") == 0)
+			{
+				// Need to perform XOR for equality of two booleans here too.
+				resultingExpression = 
+					generateFuncCall(L"Fn::Or", 
+						generateFuncCall(L"Fn::And", 
+							generateFuncCall(L"Fn::Not", exprList[0]->asJson(subs, true)), 
+							exprList[1]->asJson(subs, true)
+						),
+						generateFuncCall(L"Fn::And", 
+							exprList[0]->asJson(subs, true), 
+							generateFuncCall(L"Fn::Not", exprList[1]->asJson(subs, true))
+						)
+
+					);
+			}
+			else
+			{
+				resultingExpression = generateFuncCall(L"Fn::Not",
+					generateFuncCall(L"Fn::Equals", exprList[0]->asJson(subs, true), exprList[1]->asJson(subs, true)));
+			}
 		}
 		else if (operators[0].compare(L"and") == 0)
 		{
-			resultingExpression = generateFuncCall(L"Fn::And", exprList[0]->asJson(subs), exprList[1]->asJson(subs));
+			resultingExpression = generateFuncCall(L"Fn::And", exprList[0]->asJson(subs, true), exprList[1]->asJson(subs, true));
 		}
 		else if (operators[0].compare(L"or") == 0)
 		{
-			resultingExpression = generateFuncCall(L"Fn::Or", exprList[0]->asJson(subs), exprList[1]->asJson(subs));
+			resultingExpression = generateFuncCall(L"Fn::Or", exprList[0]->asJson(subs, true), exprList[1]->asJson(subs, true));
 		}
 
 		return ctable->AddCondition(resultingExpression);
 	}
 
-	virtual picojson::value asJson(const Substitution& subs) const 
+	virtual picojson::value asJson(const Substitution& subs, bool forConditionSection) const 
 	{
 		int cond = CommitToConditionTable(subs);
+
+		if (forConditionSection)
+		{
+			std::map<std::wstring, picojson::value> condRef;
+			condRef[L"Condition"] = picojson::value(ctable->GetConditionName(cond));
+			return picojson::value(condRef);
+		}
 
 		std::map<std::wstring, picojson::value> funcall;
 

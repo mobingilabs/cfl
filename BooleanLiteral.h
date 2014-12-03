@@ -14,7 +14,7 @@ public:
 
 	}
 
-	virtual picojson::value asJson(const Substitution& subs) const 
+	virtual picojson::value asJson(const Substitution& subs, bool forConditionSection) const 
 	{
 		return picojson::value(val);
 	}

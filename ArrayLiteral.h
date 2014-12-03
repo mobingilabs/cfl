@@ -20,13 +20,13 @@ public:
 		elements.push_back(element);
 	}
 
-	virtual picojson::value asJson(const Substitution& subs) const 
+	virtual picojson::value asJson(const Substitution& subs, bool forConditionSection) const 
 	{
 		std::vector<picojson::value> arr;
 
 		for (const std::shared_ptr<Expression>& e : elements)
 		{
-			arr.push_back(e->asJson(subs));
+			arr.push_back(e->asJson(subs, forConditionSection));
 		}
 
 		return picojson::value(arr);

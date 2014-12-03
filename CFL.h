@@ -285,7 +285,7 @@ class CFL
 		{
 			std::wstring awsPrefix(L"AWS::");
 
-			subs.Add(res->getName(), SymbolReference(res->getName() + suffix).asJson(subs) );
+			subs.Add(res->getName(), SymbolReference(res->getName() + suffix).asJson(subs, false) );
 
 			// Two cases: one is an AWS Resource, another is a stack
 			if ( stackMap.find(res->getType()) != stackMap.end() )
@@ -556,7 +556,7 @@ class CFL
 			resourceList[kv.first] = picojson::value(resourceObject);
 
 
-			subs.Add(kv.second.name, SymbolReference(kv.first).asJson(subs) );
+			subs.Add(kv.second.name, SymbolReference(kv.first).asJson(subs, false) );
 		}
 
 		for (auto& kv : outputs)

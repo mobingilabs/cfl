@@ -22,7 +22,7 @@ public:
 		fields.push_back(field);
 	}
 	
-	virtual picojson::value asJson(const Substitution& subs) const 
+	virtual picojson::value asJson(const Substitution& subs, bool forConditionSection) const 
 	{
 		std::map<std::wstring, picojson::value> obj;
 
