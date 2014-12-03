@@ -20,11 +20,13 @@
 #include "Metadata.h"
 #include "Mapping.h"
 #include "MappingCall.h"
+#include "OperationList.h"
 
 #include "Variable.h"
 #include "Stack.h"
 #include "Resource.h"
 #include "Parameter.h"
+#include "ConditionsTable.h"
 
 typedef std::shared_ptr<Expression> ExpressionPtr;
 typedef std::shared_ptr<RecordField> RecordFieldPtr;
@@ -37,6 +39,7 @@ typedef std::shared_ptr<Stack> StackPtr;
 typedef std::shared_ptr<Resource> ResourcePtr;
 typedef std::shared_ptr<Parameter> ParameterPtr;
 typedef std::shared_ptr<Mapping> MappingPtr;
+typedef std::shared_ptr<ConditionsTable> ConditionsTablePtr;
 
 typedef std::shared_ptr<StringLiteral> StringLiteralPtr;
 
@@ -53,8 +56,8 @@ typedef std::shared_ptr<StringLiteral> StringLiteralPtr;
 		_char=5,
 		_nextLine=6,
 		_comments=7,
-		_ddtSym=39,
-		_optionSym=40
+		_ddtSym=32,
+		_optionSym=33
 	};
 
 
@@ -91,24 +94,17 @@ public:
 			case 18: s = CocoUtil::coco_string_create(L"\".\" expected"); break;
 			case 19: s = CocoUtil::coco_string_create(L"\"==\" expected"); break;
 			case 20: s = CocoUtil::coco_string_create(L"\"!=\" expected"); break;
-			case 21: s = CocoUtil::coco_string_create(L"\">\" expected"); break;
-			case 22: s = CocoUtil::coco_string_create(L"\"<\" expected"); break;
-			case 23: s = CocoUtil::coco_string_create(L"\">=\" expected"); break;
-			case 24: s = CocoUtil::coco_string_create(L"\"<=\" expected"); break;
-			case 25: s = CocoUtil::coco_string_create(L"\"+\" expected"); break;
-			case 26: s = CocoUtil::coco_string_create(L"\"-\" expected"); break;
-			case 27: s = CocoUtil::coco_string_create(L"\"*\" expected"); break;
-			case 28: s = CocoUtil::coco_string_create(L"\"/\" expected"); break;
-			case 29: s = CocoUtil::coco_string_create(L"\"++\" expected"); break;
-			case 30: s = CocoUtil::coco_string_create(L"\"SET\" expected"); break;
-			case 31: s = CocoUtil::coco_string_create(L"\"=\" expected"); break;
-			case 32: s = CocoUtil::coco_string_create(L"\"MAKE\" expected"); break;
-			case 33: s = CocoUtil::coco_string_create(L"\"RETURN\" expected"); break;
-			case 34: s = CocoUtil::coco_string_create(L"\"STACK\" expected"); break;
-			case 35: s = CocoUtil::coco_string_create(L"\";\" expected"); break;
-			case 36: s = CocoUtil::coco_string_create(L"\"MAPPING\" expected"); break;
-			case 37: s = CocoUtil::coco_string_create(L"\"IMPORT\" expected"); break;
-			case 38: s = CocoUtil::coco_string_create(L"??? expected"); break;
+			case 21: s = CocoUtil::coco_string_create(L"\"and\" expected"); break;
+			case 22: s = CocoUtil::coco_string_create(L"\"or\" expected"); break;
+			case 23: s = CocoUtil::coco_string_create(L"\"SET\" expected"); break;
+			case 24: s = CocoUtil::coco_string_create(L"\"=\" expected"); break;
+			case 25: s = CocoUtil::coco_string_create(L"\"MAKE\" expected"); break;
+			case 26: s = CocoUtil::coco_string_create(L"\"RETURN\" expected"); break;
+			case 27: s = CocoUtil::coco_string_create(L"\"STACK\" expected"); break;
+			case 28: s = CocoUtil::coco_string_create(L"\";\" expected"); break;
+			case 29: s = CocoUtil::coco_string_create(L"\"MAPPING\" expected"); break;
+			case 30: s = CocoUtil::coco_string_create(L"\"IMPORT\" expected"); break;
+			case 31: s = CocoUtil::coco_string_create(L"??? expected"); break;
 
 			default:
 			{
@@ -215,7 +211,7 @@ private:
 		} else if (la->kind == 9 /* "false" */) {
 			Get();
 			expr = ExpressionPtr(new BooleanLiteral(false)); 
-		} else SynErr(39);
+		} else SynErr(32);
 }
 
 void String(ExpressionPtr &expr) {
@@ -247,9 +243,8 @@ void Array(ExpressionPtr &expr) {
 
 void Expression(ExpressionPtr &expr) {
 		Term(expr);
-		while (StartOf(2)) {
-			BinaryOperator();
-			Term(expr);
+		if (StartOf(2)) {
+			InfixExpression(expr);
 		}
 }
 
@@ -290,7 +285,7 @@ void Literal(ExpressionPtr &expr) {
 			Record(expr);
 		} else if (la->kind == 8 /* "true" */ || la->kind == 9 /* "false" */) {
 			Boolean(expr);
-		} else SynErr(40);
+		} else SynErr(33);
 }
 
 void FunctionCall(ParameterList &list) {
@@ -355,71 +350,50 @@ void Term(ExpressionPtr &expr) {
 			Get();
 			Expression(expr);
 			Expect(17 /* ")" */);
-		} else SynErr(41);
+		} else SynErr(34);
 }
 
-void BooleanBinaryOperator() {
-		switch (la->kind) {
-		case 19 /* "==" */: {
+void BooleanBinaryOperator(std::wstring &op) {
+		if (la->kind == 19 /* "==" */) {
 			Get();
-			break;
-		}
-		case 20 /* "!=" */: {
+			op = t->val; 
+		} else if (la->kind == 20 /* "!=" */) {
 			Get();
-			break;
-		}
-		case 21 /* ">" */: {
+			op = t->val; 
+		} else if (la->kind == 21 /* "and" */) {
 			Get();
-			break;
-		}
-		case 22 /* "<" */: {
+			op = t->val; 
+		} else if (la->kind == 22 /* "or" */) {
 			Get();
-			break;
-		}
-		case 23 /* ">=" */: {
-			Get();
-			break;
-		}
-		case 24 /* "<=" */: {
-			Get();
-			break;
-		}
-		default: SynErr(42); break;
-		}
+			op = t->val; 
+		} else SynErr(35);
 }
 
-void ArithmeticBinaryOperator() {
-		if (la->kind == 25 /* "+" */) {
-			Get();
-		} else if (la->kind == 26 /* "-" */) {
-			Get();
-		} else if (la->kind == 27 /* "*" */) {
-			Get();
-		} else if (la->kind == 28 /* "/" */) {
-			Get();
-		} else SynErr(43);
+void BinaryOperator(std::wstring &op) {
+		BooleanBinaryOperator(op);
 }
 
-void StringBinaryOperator() {
-		Expect(29 /* "++" */);
-}
-
-void BinaryOperator() {
-		if (StartOf(5)) {
-			BooleanBinaryOperator();
-		} else if (StartOf(6)) {
-			ArithmeticBinaryOperator();
-		} else if (la->kind == 29 /* "++" */) {
-			StringBinaryOperator();
-		} else SynErr(44);
+void InfixExpression(ExpressionPtr &expr) {
+		OperationList* list = new OperationList(ctable, expr); 
+		expr = ExpressionPtr(list); 
+		ExpressionPtr rhs; 
+		std::wstring op;   
+		BinaryOperator(op);
+		Term(rhs);
+		list->AddExpression(op, rhs); 
+		while (StartOf(2)) {
+			BinaryOperator(op);
+			Term(rhs);
+			list->AddExpression(op, rhs); 
+		}
 }
 
 void VariableDeclaration(VariablePtr &variable) {
 		ExpressionPtr expr; 
-		Expect(30 /* "SET" */);
+		Expect(23 /* "SET" */);
 		Expect(_ident);
 		std::wstring identifier = t->val; 
-		Expect(31 /* "=" */);
+		Expect(24 /* "=" */);
 		Expression(expr);
 		variable = VariablePtr(new Variable(identifier, expr)); 
 }
@@ -429,7 +403,7 @@ void Property(ResourcePtr resource) {
 		std::wstring name; 
 		Expect(_ident);
 		name = t->val; 
-		Expect(31 /* "=" */);
+		Expect(24 /* "=" */);
 		Expression(expr);
 		resource->AddProperty(name, expr); 
 }
@@ -470,7 +444,7 @@ void ResourceDeclaration(StackPtr stack) {
 		std::wstring type, name; 
 		MetadataList list; 
 		MetadataListing(list);
-		Expect(32 /* "MAKE" */);
+		Expect(25 /* "MAKE" */);
 		Expect(_ident);
 		type = t->val; 
 		Expect(_ident);
@@ -499,7 +473,7 @@ void StackParameter(StackPtr stack) {
 		name = t->val; 
 		ParameterPtr ptr(new Parameter(name, type)); 
 		stack->AddParameter(ptr); 
-		if (la->kind == 31 /* "=" */) {
+		if (la->kind == 24 /* "=" */) {
 			Get();
 			Expression(expr);
 			ptr->setDefault(expr); 
@@ -511,13 +485,13 @@ void OutputParameter(StackPtr stack) {
 		std::wstring name; 
 		Expect(_ident);
 		name = t->val; 
-		Expect(31 /* "=" */);
+		Expect(24 /* "=" */);
 		Expression(expr);
 		stack->AddOutput(name, expr); 
 }
 
 void OutputDeclaration(StackPtr stack) {
-		Expect(33 /* "RETURN" */);
+		Expect(26 /* "RETURN" */);
 		Expect(16 /* "(" */);
 		OutputParameter(stack);
 		while (la->kind == 11 /* "," */) {
@@ -528,7 +502,7 @@ void OutputDeclaration(StackPtr stack) {
 }
 
 void StackDeclaration(StackPtr &stack) {
-		Expect(34 /* "STACK" */);
+		Expect(27 /* "STACK" */);
 		Expect(_ident);
 		stack = StackPtr(new Stack(t->val)); 
 		Expect(16 /* "(" */);
@@ -541,10 +515,10 @@ void StackDeclaration(StackPtr &stack) {
 		}
 		Expect(17 /* ")" */);
 		Expect(14 /* "{" */);
-		while (la->kind == 10 /* "[" */ || la->kind == 32 /* "MAKE" */) {
+		while (la->kind == 10 /* "[" */ || la->kind == 25 /* "MAKE" */) {
 			ResourceDeclaration(stack);
 		}
-		if (la->kind == 33 /* "RETURN" */) {
+		if (la->kind == 26 /* "RETURN" */) {
 			OutputDeclaration(stack);
 		}
 		Expect(15 /* "}" */);
@@ -554,7 +528,7 @@ void MappingRow(MappingPtr& mapping) {
 		std::vector< std::wstring > data; 
 		Expect(_string);
 		std::wstring rowname = StringLiteral(t->val).getContent(); 
-		Expect(31 /* "=" */);
+		Expect(24 /* "=" */);
 		Expect(_string);
 		data.push_back(StringLiteral(t->val).getContent()); 
 		while (la->kind == 11 /* "," */) {
@@ -562,12 +536,12 @@ void MappingRow(MappingPtr& mapping) {
 			Expect(_string);
 			data.push_back(StringLiteral(t->val).getContent()); 
 		}
-		Expect(35 /* ";" */);
+		Expect(28 /* ";" */);
 		mapping->AddRow(rowname, data); 
 }
 
 void MappingDeclaration(MappingPtr& mapping) {
-		Expect(36 /* "MAPPING" */);
+		Expect(29 /* "MAPPING" */);
 		Expect(_ident);
 		mapping = MappingPtr(new Mapping(t->val)); 
 		Expect(16 /* "(" */);
@@ -590,16 +564,16 @@ void Statement() {
 		VariablePtr variable; 
 		StackPtr stack; 
 		MappingPtr mapping; 
-		if (la->kind == 30 /* "SET" */) {
+		if (la->kind == 23 /* "SET" */) {
 			VariableDeclaration(variable);
 			variables.push_back(variable); 
-		} else if (la->kind == 34 /* "STACK" */) {
+		} else if (la->kind == 27 /* "STACK" */) {
 			StackDeclaration(stack);
 			stacks.push_back(stack); 
-		} else if (la->kind == 36 /* "MAPPING" */) {
+		} else if (la->kind == 29 /* "MAPPING" */) {
 			MappingDeclaration(mapping);
 			mappings.push_back(mapping); 
-		} else SynErr(45);
+		} else SynErr(36);
 }
 
 void Description() {
@@ -608,7 +582,7 @@ void Description() {
 }
 
 void ImportStatement() {
-		Expect(37 /* "IMPORT" */);
+		Expect(30 /* "IMPORT" */);
 		if (la->kind == _string) {
 			Get();
 			StringLiteralPtr str = StringLiteralPtr(new StringLiteral(t->val)); 
@@ -617,17 +591,17 @@ void ImportStatement() {
 			Get();
 			StringLiteralPtr str = StringLiteralPtr(new StringLiteral(t->val)); 
 			absoluteImports.push_back(str); 
-		} else SynErr(46);
+		} else SynErr(37);
 }
 
 void CFL() {
 		if (la->kind == _comments) {
 			Description();
 		}
-		while (la->kind == 37 /* "IMPORT" */) {
+		while (la->kind == 30 /* "IMPORT" */) {
 			ImportStatement();
 		}
-		while (la->kind == 30 /* "SET" */ || la->kind == 34 /* "STACK" */ || la->kind == 36 /* "MAPPING" */) {
+		while (la->kind == 23 /* "SET" */ || la->kind == 27 /* "STACK" */ || la->kind == 29 /* "MAPPING" */) {
 			Statement();
 		}
 		Expect(_EOF);
@@ -650,6 +624,7 @@ std::wstring description = L"Created using git@github.com:davidsiaw/cfl. Since t
 	std::vector<StringLiteralPtr> imports;
 	std::vector<StringLiteralPtr> absoluteImports;
 	std::vector<MappingPtr> mappings;
+	ConditionsTablePtr ctable;
 
 
 
@@ -751,7 +726,7 @@ std::wstring description = L"Created using git@github.com:davidsiaw/cfl. Since t
 	}
 
 	Parser(std::shared_ptr<Scanner> scanner) {
-		maxT = 38;
+		maxT = 31;
 
 		ParserInitCaller<Parser>::CallInit(this);
 		dummyToken = NULL;
@@ -778,14 +753,12 @@ private:
 		const bool T = true;
 		const bool x = false;
 
-		static bool set[7][40] = {
-		{T,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x},
-		{x,T,T,T, x,x,x,x, T,T,T,x, x,x,T,x, T,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x},
-		{x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,T, T,T,T,T, T,T,T,T, T,T,x,x, x,x,x,x, x,x,x,x},
-		{x,T,T,T, x,x,x,x, T,T,T,x, x,x,T,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x},
-		{x,x,T,T, x,x,x,x, T,T,T,x, x,x,T,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x},
-		{x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,T, T,T,T,T, T,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x},
-		{x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,T,T,T, T,x,x,x, x,x,x,x, x,x,x,x}
+		static bool set[5][33] = {
+		{T,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x},
+		{x,T,T,T, x,x,x,x, T,T,T,x, x,x,T,x, T,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x},
+		{x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,T, T,T,T,x, x,x,x,x, x,x,x,x, x},
+		{x,T,T,T, x,x,x,x, T,T,T,x, x,x,T,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x},
+		{x,x,T,T, x,x,x,x, T,T,T,x, x,x,T,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x}
 	};
 
 

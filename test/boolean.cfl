@@ -1,0 +1,19 @@
+---
+Simple conditional template
+---
+
+SET Regions = 5
+
+STACK Main (string Name, string InstanceId)
+{
+	MAKE AWS::EC2::EIP ControlServerIP (InstanceId = InstanceId)
+
+	MAKE Booleaner Kyan (Meow = 2 == 3)
+
+	RETURN (Result = ControlServerIP)
+}
+
+STACK Booleaner (boolean Meow)
+{
+	MAKE AWS::EC2::EIP AnotherIP (InstanceId = Meow)
+}

@@ -15,11 +15,13 @@
 #include "Metadata.h"
 #include "Mapping.h"
 #include "MappingCall.h"
+#include "OperationList.h"
 
 #include "Variable.h"
 #include "Stack.h"
 #include "Resource.h"
 #include "Parameter.h"
+#include "ConditionsTable.h"
 
 typedef std::shared_ptr<Expression> ExpressionPtr;
 typedef std::shared_ptr<RecordField> RecordFieldPtr;
@@ -32,6 +34,7 @@ typedef std::shared_ptr<Stack> StackPtr;
 typedef std::shared_ptr<Resource> ResourcePtr;
 typedef std::shared_ptr<Parameter> ParameterPtr;
 typedef std::shared_ptr<Mapping> MappingPtr;
+typedef std::shared_ptr<ConditionsTable> ConditionsTablePtr;
 
 typedef std::shared_ptr<StringLiteral> StringLiteralPtr;
 
@@ -44,6 +47,7 @@ COMPILER CFL
 	std::vector<StringLiteralPtr> imports;
 	std::vector<StringLiteralPtr> absoluteImports;
 	std::vector<MappingPtr> mappings;
+	ConditionsTablePtr ctable;
 
 CHARACTERS
 	bigletter = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".
@@ -187,10 +191,40 @@ ident 																(. std::wstring ident = t->val; .)
 ]
 .
 
+Term<ExpressionPtr &expr> =
+( Literal<expr> | Reference<expr> )
+| "(" (Expression<expr>) ")"
+.
 
+BooleanBinaryOperator<std::wstring &op> =
+"=="																(. op = t->val; .)
+| "!="																(. op = t->val; .)
+| "and"																(. op = t->val; .)
+| "or"																(. op = t->val; .)
+.
+
+BinaryOperator<std::wstring &op> =
+BooleanBinaryOperator<op>
+.
+
+InfixExpression<ExpressionPtr &expr> =
+																	(. OperationList* list = new OperationList(ctable, expr); .)
+																	(. expr = ExpressionPtr(list); .)
+
+																	(. ExpressionPtr rhs; .)
+																	(. std::wstring op;   .)
+
+BinaryOperator<op> Term<rhs>										(. list->AddExpression(op, rhs); .)
+{
+	BinaryOperator<op> Term<rhs>									(. list->AddExpression(op, rhs); .)
+}
+.
 
 Expression<ExpressionPtr &expr> = 
-( Literal<expr> | Reference<expr> )
+Term<expr>
+[
+	InfixExpression<expr>
+]
 .
 
 VariableDeclaration<VariablePtr &variable> =						(. ExpressionPtr expr; .)

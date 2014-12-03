@@ -528,43 +528,41 @@ private:
 	void Init() {
 		EOL    = '\n';
 		eofSym = 0;
-		maxT = 38;
-	noSym = 38;
+		maxT = 31;
+	noSym = 31;
 	int i;
 	for (i = 65; i <= 90; ++i) start.set(i, 1);
 	for (i = 97; i <= 122; ++i) start.set(i, 1);
 	for (i = 48; i <= 57; ++i) start.set(i, 3);
 	for (i = 10; i <= 10; ++i) start.set(i, 16);
 	start.set(34, 6);
-	start.set(60, 52);
+	start.set(60, 9);
 	start.set(39, 11);
-	start.set(45, 53);
-	start.set(36, 24);
-	start.set(91, 35);
-	start.set(44, 36);
-	start.set(93, 37);
-	start.set(58, 38);
-	start.set(123, 39);
-	start.set(125, 40);
-	start.set(40, 41);
-	start.set(41, 42);
-	start.set(46, 43);
-	start.set(61, 54);
-	start.set(33, 45);
-	start.set(62, 55);
-	start.set(43, 56);
-	start.set(42, 48);
-	start.set(47, 49);
-	start.set(59, 51);
+	start.set(45, 17);
+	start.set(36, 25);
+	start.set(91, 36);
+	start.set(44, 37);
+	start.set(93, 38);
+	start.set(58, 39);
+	start.set(123, 40);
+	start.set(125, 41);
+	start.set(40, 42);
+	start.set(41, 43);
+	start.set(46, 44);
+	start.set(61, 49);
+	start.set(33, 46);
+	start.set(59, 48);
 		start.set(Buffer::EoF, -1);
 	keywords.set(L"true", 8);
 	keywords.set(L"false", 9);
-	keywords.set(L"SET", 30);
-	keywords.set(L"MAKE", 32);
-	keywords.set(L"RETURN", 33);
-	keywords.set(L"STACK", 34);
-	keywords.set(L"MAPPING", 36);
-	keywords.set(L"IMPORT", 37);
+	keywords.set(L"and", 21);
+	keywords.set(L"or", 22);
+	keywords.set(L"SET", 23);
+	keywords.set(L"MAKE", 25);
+	keywords.set(L"RETURN", 26);
+	keywords.set(L"STACK", 27);
+	keywords.set(L"MAPPING", 29);
+	keywords.set(L"IMPORT", 30);
 
 
 		pos = -1; line = 1; col = 0; charPos = -1;
@@ -680,7 +678,7 @@ private:
 		case 9:
 			case_9:
 			if (ch <= 9 || (ch >= 11 && ch <= 12) || (ch >= 14 && ch <= L'!') || (ch >= L'#' && ch <= L'=') || (ch >= L'?' && ch <= L'[') || (ch >= L']' && ch <= 65535)) {AddCh(); goto case_9;}
-			else if (ch == L'>') {AddCh(); goto case_25;}
+			else if (ch == L'>') {AddCh(); goto case_26;}
 			else if (ch == 92) {AddCh(); goto case_10;}
 			else {goto case_0;}
 		case 10:
@@ -710,180 +708,147 @@ private:
 		case 16:
 			{t->kind = 6; break;}
 		case 17:
-			case_17:
 			if (ch == L'-') {AddCh(); goto case_18;}
 			else {goto case_0;}
 		case 18:
 			case_18:
-			if (ch == 10) {AddCh(); goto case_20;}
-			else if (ch == 13) {AddCh(); goto case_19;}
+			if (ch == L'-') {AddCh(); goto case_19;}
 			else {goto case_0;}
 		case 19:
 			case_19:
-			if (ch == 10) {AddCh(); goto case_20;}
+			if (ch == 10) {AddCh(); goto case_21;}
+			else if (ch == 13) {AddCh(); goto case_20;}
 			else {goto case_0;}
 		case 20:
 			case_20:
-			if (ch <= 65535) {AddCh(); goto case_21;}
+			if (ch == 10) {AddCh(); goto case_21;}
 			else {goto case_0;}
 		case 21:
 			case_21:
-			if (ch <= 9 || (ch >= 11 && ch <= 12) || (ch >= 14 && ch <= 65535)) {AddCh(); goto case_21;}
-			else if (ch == 10) {AddCh(); goto case_26;}
-			else if (ch == 13) {AddCh(); goto case_27;}
+			if (ch <= 65535) {AddCh(); goto case_22;}
 			else {goto case_0;}
 		case 22:
 			case_22:
-			recEnd = pos; recKind = 39;
-			if ((ch >= L'0' && ch <= L'9') || (ch >= L'a' && ch <= L'z')) {AddCh(); goto case_22;}
-			else {t->kind = 39; break;}
+			if (ch <= 9 || (ch >= 11 && ch <= 12) || (ch >= 14 && ch <= 65535)) {AddCh(); goto case_22;}
+			else if (ch == 10) {AddCh(); goto case_27;}
+			else if (ch == 13) {AddCh(); goto case_28;}
+			else {goto case_0;}
 		case 23:
 			case_23:
-			recEnd = pos; recKind = 40;
-			if ((ch >= L'-' && ch <= L'.') || (ch >= L'0' && ch <= L':') || (ch >= L'a' && ch <= L'z')) {AddCh(); goto case_23;}
-			else {t->kind = 40; break;}
+			recEnd = pos; recKind = 32;
+			if ((ch >= L'0' && ch <= L'9') || (ch >= L'a' && ch <= L'z')) {AddCh(); goto case_23;}
+			else {t->kind = 32; break;}
 		case 24:
-			recEnd = pos; recKind = 39;
-			if ((ch >= L'0' && ch <= L'9')) {AddCh(); goto case_22;}
-			else if ((ch >= L'a' && ch <= L'z')) {AddCh(); goto case_28;}
-			else {t->kind = 39; break;}
+			case_24:
+			recEnd = pos; recKind = 33;
+			if ((ch >= L'-' && ch <= L'.') || (ch >= L'0' && ch <= L':') || (ch >= L'a' && ch <= L'z')) {AddCh(); goto case_24;}
+			else {t->kind = 33; break;}
 		case 25:
-			case_25:
-			recEnd = pos; recKind = 4;
-			if (ch <= 9 || (ch >= 11 && ch <= 12) || (ch >= 14 && ch <= L'!') || (ch >= L'#' && ch <= L'=') || (ch >= L'?' && ch <= L'[') || (ch >= L']' && ch <= 65535)) {AddCh(); goto case_9;}
-			else if (ch == L'>') {AddCh(); goto case_25;}
-			else if (ch == 92) {AddCh(); goto case_10;}
-			else {t->kind = 4; break;}
+			recEnd = pos; recKind = 32;
+			if ((ch >= L'0' && ch <= L'9')) {AddCh(); goto case_23;}
+			else if ((ch >= L'a' && ch <= L'z')) {AddCh(); goto case_29;}
+			else {t->kind = 32; break;}
 		case 26:
 			case_26:
-			if (ch <= 9 || (ch >= 11 && ch <= 12) || (ch >= 14 && ch <= L',') || (ch >= L'.' && ch <= 65535)) {AddCh(); goto case_21;}
-			else if (ch == 10) {AddCh(); goto case_26;}
-			else if (ch == 13) {AddCh(); goto case_27;}
-			else if (ch == L'-') {AddCh(); goto case_29;}
-			else {goto case_0;}
+			recEnd = pos; recKind = 4;
+			if (ch <= 9 || (ch >= 11 && ch <= 12) || (ch >= 14 && ch <= L'!') || (ch >= L'#' && ch <= L'=') || (ch >= L'?' && ch <= L'[') || (ch >= L']' && ch <= 65535)) {AddCh(); goto case_9;}
+			else if (ch == L'>') {AddCh(); goto case_26;}
+			else if (ch == 92) {AddCh(); goto case_10;}
+			else {t->kind = 4; break;}
 		case 27:
 			case_27:
-			if (ch <= 9 || (ch >= 11 && ch <= 12) || (ch >= 14 && ch <= 65535)) {AddCh(); goto case_21;}
-			else if (ch == 10) {AddCh(); goto case_26;}
-			else if (ch == 13) {AddCh(); goto case_27;}
+			if (ch <= 9 || (ch >= 11 && ch <= 12) || (ch >= 14 && ch <= L',') || (ch >= L'.' && ch <= 65535)) {AddCh(); goto case_22;}
+			else if (ch == 10) {AddCh(); goto case_27;}
+			else if (ch == 13) {AddCh(); goto case_28;}
+			else if (ch == L'-') {AddCh(); goto case_30;}
 			else {goto case_0;}
 		case 28:
 			case_28:
-			recEnd = pos; recKind = 39;
-			if ((ch >= L'0' && ch <= L'9')) {AddCh(); goto case_22;}
-			else if ((ch >= L'a' && ch <= L'z')) {AddCh(); goto case_28;}
-			else if (ch == L'=') {AddCh(); goto case_23;}
-			else {t->kind = 39; break;}
+			if (ch <= 9 || (ch >= 11 && ch <= 12) || (ch >= 14 && ch <= 65535)) {AddCh(); goto case_22;}
+			else if (ch == 10) {AddCh(); goto case_27;}
+			else if (ch == 13) {AddCh(); goto case_28;}
+			else {goto case_0;}
 		case 29:
 			case_29:
-			if (ch <= 9 || (ch >= 11 && ch <= 12) || (ch >= 14 && ch <= L',') || (ch >= L'.' && ch <= 65535)) {AddCh(); goto case_21;}
-			else if (ch == 10) {AddCh(); goto case_26;}
-			else if (ch == 13) {AddCh(); goto case_27;}
-			else if (ch == L'-') {AddCh(); goto case_30;}
-			else {goto case_0;}
+			recEnd = pos; recKind = 32;
+			if ((ch >= L'0' && ch <= L'9')) {AddCh(); goto case_23;}
+			else if ((ch >= L'a' && ch <= L'z')) {AddCh(); goto case_29;}
+			else if (ch == L'=') {AddCh(); goto case_24;}
+			else {t->kind = 32; break;}
 		case 30:
 			case_30:
-			if (ch <= 9 || (ch >= 11 && ch <= 12) || (ch >= 14 && ch <= L',') || (ch >= L'.' && ch <= 65535)) {AddCh(); goto case_21;}
-			else if (ch == 10) {AddCh(); goto case_26;}
-			else if (ch == 13) {AddCh(); goto case_27;}
+			if (ch <= 9 || (ch >= 11 && ch <= 12) || (ch >= 14 && ch <= L',') || (ch >= L'.' && ch <= 65535)) {AddCh(); goto case_22;}
+			else if (ch == 10) {AddCh(); goto case_27;}
+			else if (ch == 13) {AddCh(); goto case_28;}
 			else if (ch == L'-') {AddCh(); goto case_31;}
 			else {goto case_0;}
 		case 31:
 			case_31:
-			if (ch <= 9 || (ch >= 11 && ch <= 12) || (ch >= 14 && ch <= 65535)) {AddCh(); goto case_21;}
-			else if (ch == 10) {AddCh(); goto case_32;}
-			else if (ch == 13) {AddCh(); goto case_33;}
+			if (ch <= 9 || (ch >= 11 && ch <= 12) || (ch >= 14 && ch <= L',') || (ch >= L'.' && ch <= 65535)) {AddCh(); goto case_22;}
+			else if (ch == 10) {AddCh(); goto case_27;}
+			else if (ch == 13) {AddCh(); goto case_28;}
+			else if (ch == L'-') {AddCh(); goto case_32;}
 			else {goto case_0;}
 		case 32:
 			case_32:
-			recEnd = pos; recKind = 7;
-			if (ch <= 9 || (ch >= 11 && ch <= 12) || (ch >= 14 && ch <= L',') || (ch >= L'.' && ch <= 65535)) {AddCh(); goto case_21;}
-			else if (ch == 10) {AddCh(); goto case_26;}
-			else if (ch == 13) {AddCh(); goto case_27;}
-			else if (ch == L'-') {AddCh(); goto case_29;}
-			else {t->kind = 7; break;}
+			if (ch <= 9 || (ch >= 11 && ch <= 12) || (ch >= 14 && ch <= 65535)) {AddCh(); goto case_22;}
+			else if (ch == 10) {AddCh(); goto case_33;}
+			else if (ch == 13) {AddCh(); goto case_34;}
+			else {goto case_0;}
 		case 33:
 			case_33:
-			if (ch <= 9 || (ch >= 11 && ch <= 12) || (ch >= 14 && ch <= 65535)) {AddCh(); goto case_21;}
-			else if (ch == 10) {AddCh(); goto case_34;}
-			else if (ch == 13) {AddCh(); goto case_27;}
-			else {goto case_0;}
+			recEnd = pos; recKind = 7;
+			if (ch <= 9 || (ch >= 11 && ch <= 12) || (ch >= 14 && ch <= L',') || (ch >= L'.' && ch <= 65535)) {AddCh(); goto case_22;}
+			else if (ch == 10) {AddCh(); goto case_27;}
+			else if (ch == 13) {AddCh(); goto case_28;}
+			else if (ch == L'-') {AddCh(); goto case_30;}
+			else {t->kind = 7; break;}
 		case 34:
 			case_34:
-			recEnd = pos; recKind = 7;
-			if (ch <= 9 || (ch >= 11 && ch <= 12) || (ch >= 14 && ch <= L',') || (ch >= L'.' && ch <= 65535)) {AddCh(); goto case_21;}
-			else if (ch == 10) {AddCh(); goto case_26;}
-			else if (ch == 13) {AddCh(); goto case_27;}
-			else if (ch == L'-') {AddCh(); goto case_29;}
-			else {t->kind = 7; break;}
-		case 35:
-			{t->kind = 10; break;}
-		case 36:
-			{t->kind = 11; break;}
-		case 37:
-			{t->kind = 12; break;}
-		case 38:
-			{t->kind = 13; break;}
-		case 39:
-			{t->kind = 14; break;}
-		case 40:
-			{t->kind = 15; break;}
-		case 41:
-			{t->kind = 16; break;}
-		case 42:
-			{t->kind = 17; break;}
-		case 43:
-			{t->kind = 18; break;}
-		case 44:
-			case_44:
-			{t->kind = 19; break;}
-		case 45:
-			if (ch == L'=') {AddCh(); goto case_46;}
+			if (ch <= 9 || (ch >= 11 && ch <= 12) || (ch >= 14 && ch <= 65535)) {AddCh(); goto case_22;}
+			else if (ch == 10) {AddCh(); goto case_35;}
+			else if (ch == 13) {AddCh(); goto case_28;}
 			else {goto case_0;}
+		case 35:
+			case_35:
+			recEnd = pos; recKind = 7;
+			if (ch <= 9 || (ch >= 11 && ch <= 12) || (ch >= 14 && ch <= L',') || (ch >= L'.' && ch <= 65535)) {AddCh(); goto case_22;}
+			else if (ch == 10) {AddCh(); goto case_27;}
+			else if (ch == 13) {AddCh(); goto case_28;}
+			else if (ch == L'-') {AddCh(); goto case_30;}
+			else {t->kind = 7; break;}
+		case 36:
+			{t->kind = 10; break;}
+		case 37:
+			{t->kind = 11; break;}
+		case 38:
+			{t->kind = 12; break;}
+		case 39:
+			{t->kind = 13; break;}
+		case 40:
+			{t->kind = 14; break;}
+		case 41:
+			{t->kind = 15; break;}
+		case 42:
+			{t->kind = 16; break;}
+		case 43:
+			{t->kind = 17; break;}
+		case 44:
+			{t->kind = 18; break;}
+		case 45:
+			case_45:
+			{t->kind = 19; break;}
 		case 46:
-			case_46:
-			{t->kind = 20; break;}
+			if (ch == L'=') {AddCh(); goto case_47;}
+			else {goto case_0;}
 		case 47:
 			case_47:
-			{t->kind = 23; break;}
+			{t->kind = 20; break;}
 		case 48:
-			{t->kind = 27; break;}
-		case 49:
 			{t->kind = 28; break;}
-		case 50:
-			case_50:
-			{t->kind = 29; break;}
-		case 51:
-			{t->kind = 35; break;}
-		case 52:
-			recEnd = pos; recKind = 22;
-			if (ch <= 9 || (ch >= 11 && ch <= 12) || (ch >= 14 && ch <= L'!') || (ch >= L'#' && ch <= L'<') || (ch >= L'?' && ch <= L'[') || (ch >= L']' && ch <= 65535)) {AddCh(); goto case_9;}
-			else if (ch == L'>') {AddCh(); goto case_25;}
-			else if (ch == 92) {AddCh(); goto case_10;}
-			else if (ch == L'=') {AddCh(); goto case_57;}
-			else {t->kind = 22; break;}
-		case 53:
-			recEnd = pos; recKind = 26;
-			if (ch == L'-') {AddCh(); goto case_17;}
-			else {t->kind = 26; break;}
-		case 54:
-			recEnd = pos; recKind = 31;
-			if (ch == L'=') {AddCh(); goto case_44;}
-			else {t->kind = 31; break;}
-		case 55:
-			recEnd = pos; recKind = 21;
-			if (ch == L'=') {AddCh(); goto case_47;}
-			else {t->kind = 21; break;}
-		case 56:
-			recEnd = pos; recKind = 25;
-			if (ch == L'+') {AddCh(); goto case_50;}
-			else {t->kind = 25; break;}
-		case 57:
-			case_57:
+		case 49:
 			recEnd = pos; recKind = 24;
-			if (ch <= 9 || (ch >= 11 && ch <= 12) || (ch >= 14 && ch <= L'!') || (ch >= L'#' && ch <= L'=') || (ch >= L'?' && ch <= L'[') || (ch >= L']' && ch <= 65535)) {AddCh(); goto case_9;}
-			else if (ch == L'>') {AddCh(); goto case_25;}
-			else if (ch == 92) {AddCh(); goto case_10;}
+			if (ch == L'=') {AddCh(); goto case_45;}
 			else {t->kind = 24; break;}
 
 		}

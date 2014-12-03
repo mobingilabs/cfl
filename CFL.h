@@ -586,7 +586,8 @@ class CFL
 		std::wstring wFilename, 
 		std::map< std::wstring, StackPtr >& stackMap,
 		std::map< std::wstring, VariablePtr >& variableMap,
-		std::map< std::wstring, MappingPtr >& mappingMap
+		std::map< std::wstring, MappingPtr >& mappingMap,
+		ConditionsTablePtr ctable
 		)
 	{
 
@@ -595,7 +596,7 @@ class CFL
 		std::ifstream ifs(filename);
 		std::string content( (std::istreambuf_iterator<char>(ifs)) , (std::istreambuf_iterator<char>()) );
 
-		import(wFilename, content, stackMap, variableMap, mappingMap);
+		import(wFilename, content, stackMap, variableMap, mappingMap, ctable);
 	}
 
 	void import(
@@ -603,23 +604,24 @@ class CFL
 		std::string cfl, 
 		std::map< std::wstring, StackPtr >& stackMap,
 		std::map< std::wstring, VariablePtr >& variableMap,
-		std::map< std::wstring, MappingPtr >& mappingMap
+		std::map< std::wstring, MappingPtr >& mappingMap,
+		ConditionsTablePtr ctable
 		)
 	{
 		std::shared_ptr<Scanner> s(new Scanner((const unsigned char *)cfl.c_str(), cfl.length()));
 		Parser p(s);
-
+		p.ctable = ctable;
 		p.Parse();
 
 		for (const StringLiteralPtr str : p.imports)
 		{
 			chdir(getDirFromFilename(filename).c_str());
-			importFile(str->getContent(), stackMap, variableMap, mappingMap);
+			importFile(str->getContent(), stackMap, variableMap, mappingMap, ctable);
 		}
 
 		for (const StringLiteralPtr str : p.absoluteImports)
 		{
-			import(L"", stacks.getStack(str->getContent()), stackMap, variableMap, mappingMap);
+			import(L"", stacks.getStack(str->getContent()), stackMap, variableMap, mappingMap, ctable);
 		}
 
 		for (const StackPtr stack : p.stacks)
@@ -652,11 +654,12 @@ public:
 		std::map< std::wstring, Info<ResourcePtr> > resources;
 
 		Substitution subs;
+		ConditionsTablePtr ctable(new ConditionsTable());
 
 		std::wstring wFilename(filename.begin(), filename.end());
 		std::shared_ptr<Scanner> s(new Scanner(wFilename.c_str()));
 		Parser p(s);
-
+		p.ctable = ctable;
 		p.Parse();
 
 		std::map<std::wstring, picojson::value> theTemplate;
@@ -690,7 +693,7 @@ public:
 			}
 		}
 
-		importFile(wFilename, stackMap, variableMap, mappingMap);
+		importFile(wFilename, stackMap, variableMap, mappingMap, ctable);
 
 		if (stackMap.find(stackName) == stackMap.end())
 		{
@@ -719,6 +722,7 @@ public:
 		std::map<std::wstring, picojson::value> parameterList;
 		std::map<std::wstring, picojson::value> resourceList;
 		std::map<std::wstring, picojson::value> outputList;
+		std::map<std::wstring, picojson::value> conditionList;
 		std::vector< MetadataPtr > metadata;
 
 		addStack(L"", stackMap[stackName], 
@@ -735,6 +739,17 @@ public:
 
 			tables,
 			subs);
+
+		auto conditions = ctable->GetConditions();
+		for (int i=0; i<conditions.size(); i++)
+		{
+			conditionList[ctable->GetConditionName(i)] = conditions[i];
+		}
+
+		if (conditionList.size() != 0)
+		{
+			theTemplate[L"Conditions"] = picojson::value(conditionList);
+		}
 
 		if (parameters.size() != 0)
 		{
