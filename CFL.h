@@ -268,7 +268,9 @@ class CFL
 		std::map<std::wstring, picojson::value>& resourceList,
 		std::map<std::wstring, picojson::value>& outputList,
 		const std::shared_ptr<Tables>& tables,
-		Substitution& subs
+		Substitution& subs,
+		ConditionsTablePtr ctable,
+		std::stack< std::shared_ptr<Expression> > outerConditions
 		)
 	{
 
@@ -330,6 +332,24 @@ class CFL
 
 				std::wstring newSuffix = L"In" + res->getName() + suffix;
 
+				std::stack< std::shared_ptr<Expression> > conditions = res->getConditions();
+
+				std::stack< std::shared_ptr<Expression> > newOuterConditions = outerConditions;
+				
+				if (conditions.size() > 0)
+				{
+					std::shared_ptr<OperationList> ol(new OperationList(ctable, conditions.top()));
+					conditions.pop();
+
+					while (conditions.size())
+					{
+						ol->AddExpression(L"and", conditions.top());
+						conditions.pop();
+					}
+
+					newOuterConditions.push(ol);
+				}
+
 				addStack(
 					newSuffix,
 					stackMap[res->getType()], 
@@ -345,7 +365,9 @@ class CFL
 					outputList,
 
 					tables,
-					newSubs
+					newSubs,
+					ctable,
+					newOuterConditions
 					);
 
 				for (auto& outputkv : outputs)
@@ -394,9 +416,9 @@ class CFL
 			parameterList[kv.second.name] = picojson::value(parmInfo);
 		}
 
-
 		for (auto& kv : resources)
 		{
+			std::stack< std::shared_ptr<Expression> > conditions = kv.second.item->getConditions();
 			
 			std::map< std::wstring, MetadataPtr > dependencies;
 			LaunchData launchData;
@@ -413,10 +435,42 @@ class CFL
 			std::map<std::wstring, picojson::value> propertiesObject;
 			for (auto& propkv : kv.second.item->getProperties())
 			{
-
 				propertiesObject[propkv.first] = propkv.second->asJson(subs);
 			}
 			resourceObject[L"Properties"] = picojson::value(propertiesObject);
+
+			if (outerConditions.size() + conditions.size() > 0)
+			{
+				std::stack< std::shared_ptr<Expression> > combinedConditions;
+
+				auto outerConds = outerConditions;
+
+				while (outerConds.size())
+				{
+					combinedConditions.push(outerConds.top());
+					outerConds.pop();
+				}
+
+				while (conditions.size())
+				{
+					combinedConditions.push(conditions.top());
+					conditions.pop();
+				}
+
+				OperationList ol(ctable, combinedConditions.top());
+				combinedConditions.pop();
+
+				while (combinedConditions.size())
+				{
+					ol.AddExpression(L"and", combinedConditions.top());
+					combinedConditions.pop();
+				}
+
+				picojson::value condJson = ol.asJson(subs, true);
+				picojson::object obj = condJson.get<picojson::object>();
+
+				resourceObject[L"Condition"] = obj[L"Condition"];
+			}
 
 			resourceObject[L"Description"] = picojson::value(kv.second.name);
 
@@ -429,6 +483,7 @@ class CFL
 				}
 				resourceObject[L"DependsOn"] = picojson::value(arr);
 			}
+
 
 			if (launchData.hasData())
 			{
@@ -724,6 +779,7 @@ public:
 		std::map<std::wstring, picojson::value> outputList;
 		std::map<std::wstring, picojson::value> conditionList;
 		std::vector< MetadataPtr > metadata;
+		std::stack< std::shared_ptr<Expression> > outerConditions; 
 
 		addStack(L"", stackMap[stackName], 
 			metadata,
@@ -738,7 +794,10 @@ public:
 			outputList,
 
 			tables,
-			subs);
+			subs,
+			ctable,
+			outerConditions
+			);
 
 		auto conditions = ctable->GetConditions();
 		for (int i=0; i<conditions.size(); i++)

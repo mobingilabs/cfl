@@ -1,0 +1,53 @@
+---
+Simple If Statement
+---
+
+SET Regions = 5
+
+STACK Main (string Name, string InstanceId, string MoreStuff)
+{
+	MAKE AWS::EC2::EIP ControlServerIP (InstanceId = InstanceId)
+
+	if (5 == 6)
+	{
+		MAKE Booleaner X1 (Meow = InstanceId)
+	}
+
+	if (5 == 6)
+	{
+		MAKE AWS::EC2::EIP IP2 (InstanceId = InstanceId)
+	}
+
+	if (MoreStuff == "true")
+	{
+		MAKE Booleaner X2 (Meow = InstanceId)
+	}
+
+	if (1 == 1)
+	{
+		MAKE Conditional Cond1 (Meow = InstanceId, Nyan = MoreStuff)
+	}
+
+	if (1 == 1)
+	{
+		if (2 == 3)
+		{
+			MAKE Conditional Cond2 (Meow = InstanceId, Nyan = MoreStuff)
+		}
+	}
+
+	RETURN (Result = ControlServerIP)
+}
+
+STACK Conditional (string Meow, string Nyan)
+{
+	if (Nyan == "true")
+	{
+		MAKE AWS::EC2::EIP CondIP (InstanceId = Meow)
+	}
+}
+
+STACK Booleaner (string Meow)
+{
+	MAKE AWS::EC2::EIP AnotherIP (InstanceId = Meow)
+}

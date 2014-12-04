@@ -116,7 +116,9 @@ public:
 			reduce(exprList, operators);
 		}
 
+		//std::wcerr << "exprList.size() == " << exprList.size() << ", operators.size() ==" << operators.size() << std::endl;
 		assert(exprList.size() == 2 && operators.size() == 1);
+
 
 		picojson::value resultingExpression;
 
@@ -188,6 +190,11 @@ public:
 
 	virtual picojson::value asJson(const Substitution& subs, bool forConditionSection) const 
 	{
+		if (expressions.size() == 0)
+		{
+			return firstExpr->asJson(subs, forConditionSection);
+		}
+
 		int cond = CommitToConditionTable(subs);
 
 		if (forConditionSection)

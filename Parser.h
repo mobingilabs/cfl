@@ -7,6 +7,7 @@
 #include <map>
 #include <vector>
 #include <memory>
+#include <stack>
 
 #include "BooleanLiteral.h"
 #include "NumberLiteral.h"
@@ -56,8 +57,8 @@ typedef std::shared_ptr<StringLiteral> StringLiteralPtr;
 		_char=5,
 		_nextLine=6,
 		_comments=7,
-		_ddtSym=32,
-		_optionSym=33
+		_ddtSym=33,
+		_optionSym=34
 	};
 
 
@@ -100,11 +101,12 @@ public:
 			case 24: s = CocoUtil::coco_string_create(L"\"=\" expected"); break;
 			case 25: s = CocoUtil::coco_string_create(L"\"MAKE\" expected"); break;
 			case 26: s = CocoUtil::coco_string_create(L"\"RETURN\" expected"); break;
-			case 27: s = CocoUtil::coco_string_create(L"\"STACK\" expected"); break;
-			case 28: s = CocoUtil::coco_string_create(L"\";\" expected"); break;
-			case 29: s = CocoUtil::coco_string_create(L"\"MAPPING\" expected"); break;
-			case 30: s = CocoUtil::coco_string_create(L"\"IMPORT\" expected"); break;
-			case 31: s = CocoUtil::coco_string_create(L"??? expected"); break;
+			case 27: s = CocoUtil::coco_string_create(L"\"if\" expected"); break;
+			case 28: s = CocoUtil::coco_string_create(L"\"STACK\" expected"); break;
+			case 29: s = CocoUtil::coco_string_create(L"\";\" expected"); break;
+			case 30: s = CocoUtil::coco_string_create(L"\"MAPPING\" expected"); break;
+			case 31: s = CocoUtil::coco_string_create(L"\"IMPORT\" expected"); break;
+			case 32: s = CocoUtil::coco_string_create(L"??? expected"); break;
 
 			default:
 			{
@@ -211,7 +213,7 @@ private:
 		} else if (la->kind == 9 /* "false" */) {
 			Get();
 			expr = ExpressionPtr(new BooleanLiteral(false)); 
-		} else SynErr(32);
+		} else SynErr(33);
 }
 
 void String(ExpressionPtr &expr) {
@@ -285,7 +287,7 @@ void Literal(ExpressionPtr &expr) {
 			Record(expr);
 		} else if (la->kind == 8 /* "true" */ || la->kind == 9 /* "false" */) {
 			Boolean(expr);
-		} else SynErr(33);
+		} else SynErr(34);
 }
 
 void FunctionCall(ParameterList &list) {
@@ -350,7 +352,7 @@ void Term(ExpressionPtr &expr) {
 			Get();
 			Expression(expr);
 			Expect(17 /* ")" */);
-		} else SynErr(34);
+		} else SynErr(35);
 }
 
 void BooleanBinaryOperator(std::wstring &op) {
@@ -366,7 +368,7 @@ void BooleanBinaryOperator(std::wstring &op) {
 		} else if (la->kind == 22 /* "or" */) {
 			Get();
 			op = t->val; 
-		} else SynErr(35);
+		} else SynErr(36);
 }
 
 void BinaryOperator(std::wstring &op) {
@@ -461,6 +463,7 @@ void ResourceDeclaration(StackPtr stack) {
 			}
 			Expect(17 /* ")" */);
 		}
+		resource->SetCondition(conditions); 
 		stack->AddResource(resource); 
 }
 
@@ -501,8 +504,31 @@ void OutputDeclaration(StackPtr stack) {
 		Expect(17 /* ")" */);
 }
 
+void IfStatement(StackPtr stack) {
+		ExpressionPtr condExpr; 
+		Expect(27 /* "if" */);
+		Expect(16 /* "(" */);
+		Expression(condExpr);
+		Expect(17 /* ")" */);
+		Expect(14 /* "{" */);
+		conditions.push(condExpr); 
+		while (la->kind == 10 /* "[" */ || la->kind == 25 /* "MAKE" */ || la->kind == 27 /* "if" */) {
+			StackStatement(stack);
+		}
+		Expect(15 /* "}" */);
+		conditions.pop(); 
+}
+
+void StackStatement(StackPtr stack) {
+		if (la->kind == 10 /* "[" */ || la->kind == 25 /* "MAKE" */) {
+			ResourceDeclaration(stack);
+		} else if (la->kind == 27 /* "if" */) {
+			IfStatement(stack);
+		} else SynErr(37);
+}
+
 void StackDeclaration(StackPtr &stack) {
-		Expect(27 /* "STACK" */);
+		Expect(28 /* "STACK" */);
 		Expect(_ident);
 		stack = StackPtr(new Stack(t->val)); 
 		Expect(16 /* "(" */);
@@ -515,8 +541,8 @@ void StackDeclaration(StackPtr &stack) {
 		}
 		Expect(17 /* ")" */);
 		Expect(14 /* "{" */);
-		while (la->kind == 10 /* "[" */ || la->kind == 25 /* "MAKE" */) {
-			ResourceDeclaration(stack);
+		while (la->kind == 10 /* "[" */ || la->kind == 25 /* "MAKE" */ || la->kind == 27 /* "if" */) {
+			StackStatement(stack);
 		}
 		if (la->kind == 26 /* "RETURN" */) {
 			OutputDeclaration(stack);
@@ -536,12 +562,12 @@ void MappingRow(MappingPtr& mapping) {
 			Expect(_string);
 			data.push_back(StringLiteral(t->val).getContent()); 
 		}
-		Expect(28 /* ";" */);
+		Expect(29 /* ";" */);
 		mapping->AddRow(rowname, data); 
 }
 
 void MappingDeclaration(MappingPtr& mapping) {
-		Expect(29 /* "MAPPING" */);
+		Expect(30 /* "MAPPING" */);
 		Expect(_ident);
 		mapping = MappingPtr(new Mapping(t->val)); 
 		Expect(16 /* "(" */);
@@ -567,13 +593,13 @@ void Statement() {
 		if (la->kind == 23 /* "SET" */) {
 			VariableDeclaration(variable);
 			variables.push_back(variable); 
-		} else if (la->kind == 27 /* "STACK" */) {
+		} else if (la->kind == 28 /* "STACK" */) {
 			StackDeclaration(stack);
 			stacks.push_back(stack); 
-		} else if (la->kind == 29 /* "MAPPING" */) {
+		} else if (la->kind == 30 /* "MAPPING" */) {
 			MappingDeclaration(mapping);
 			mappings.push_back(mapping); 
-		} else SynErr(36);
+		} else SynErr(38);
 }
 
 void Description() {
@@ -582,7 +608,7 @@ void Description() {
 }
 
 void ImportStatement() {
-		Expect(30 /* "IMPORT" */);
+		Expect(31 /* "IMPORT" */);
 		if (la->kind == _string) {
 			Get();
 			StringLiteralPtr str = StringLiteralPtr(new StringLiteral(t->val)); 
@@ -591,17 +617,17 @@ void ImportStatement() {
 			Get();
 			StringLiteralPtr str = StringLiteralPtr(new StringLiteral(t->val)); 
 			absoluteImports.push_back(str); 
-		} else SynErr(37);
+		} else SynErr(39);
 }
 
 void CFL() {
 		if (la->kind == _comments) {
 			Description();
 		}
-		while (la->kind == 30 /* "IMPORT" */) {
+		while (la->kind == 31 /* "IMPORT" */) {
 			ImportStatement();
 		}
-		while (la->kind == 23 /* "SET" */ || la->kind == 27 /* "STACK" */ || la->kind == 29 /* "MAPPING" */) {
+		while (la->kind == 23 /* "SET" */ || la->kind == 28 /* "STACK" */ || la->kind == 30 /* "MAPPING" */) {
 			Statement();
 		}
 		Expect(_EOF);
@@ -624,6 +650,9 @@ std::wstring description = L"Created using git@github.com:davidsiaw/cfl. Since t
 	std::vector<StringLiteralPtr> imports;
 	std::vector<StringLiteralPtr> absoluteImports;
 	std::vector<MappingPtr> mappings;
+
+	std::stack<ExpressionPtr> conditions; 
+
 	ConditionsTablePtr ctable;
 
 
@@ -726,7 +755,7 @@ std::wstring description = L"Created using git@github.com:davidsiaw/cfl. Since t
 	}
 
 	Parser(std::shared_ptr<Scanner> scanner) {
-		maxT = 31;
+		maxT = 32;
 
 		ParserInitCaller<Parser>::CallInit(this);
 		dummyToken = NULL;
@@ -753,12 +782,12 @@ private:
 		const bool T = true;
 		const bool x = false;
 
-		static bool set[5][33] = {
-		{T,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x},
-		{x,T,T,T, x,x,x,x, T,T,T,x, x,x,T,x, T,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x},
-		{x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,T, T,T,T,x, x,x,x,x, x,x,x,x, x},
-		{x,T,T,T, x,x,x,x, T,T,T,x, x,x,T,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x},
-		{x,x,T,T, x,x,x,x, T,T,T,x, x,x,T,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x}
+		static bool set[5][34] = {
+		{T,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x},
+		{x,T,T,T, x,x,x,x, T,T,T,x, x,x,T,x, T,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x},
+		{x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,T, T,T,T,x, x,x,x,x, x,x,x,x, x,x},
+		{x,T,T,T, x,x,x,x, T,T,T,x, x,x,T,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x},
+		{x,x,T,T, x,x,x,x, T,T,T,x, x,x,T,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x,x,x, x,x}
 	};
 
 

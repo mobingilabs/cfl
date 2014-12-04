@@ -2,6 +2,7 @@
 #include <map>
 #include <vector>
 #include <memory>
+#include <stack>
 
 #include "BooleanLiteral.h"
 #include "NumberLiteral.h"
@@ -47,6 +48,9 @@ COMPILER CFL
 	std::vector<StringLiteralPtr> imports;
 	std::vector<StringLiteralPtr> absoluteImports;
 	std::vector<MappingPtr> mappings;
+
+	std::stack<ExpressionPtr> conditions; 
+
 	ConditionsTablePtr ctable;
 
 CHARACTERS
@@ -281,6 +285,7 @@ ident																(. name = t->val; .)
 	]
 ")"	
 ]
+																	(. resource->SetCondition(conditions); .)
 																	(. stack->AddResource(resource); .)
 .
 
@@ -312,6 +317,19 @@ OutputParameter<stack>
 ")"
 .
 
+IfStatement<StackPtr stack> =										(. ExpressionPtr condExpr; .)
+"if" "(" Expression<condExpr> ")" "{"								(. conditions.push(condExpr); .)
+{
+	StackStatement<stack>
+}
+"}"																	(. conditions.pop(); .)
+.
+
+StackStatement<StackPtr stack> =
+ResourceDeclaration<stack> |
+IfStatement<stack>
+.
+
 StackDeclaration<StackPtr &stack> =
 "STACK"
 ident																(. stack = StackPtr(new Stack(t->val)); .)
@@ -324,8 +342,8 @@ ident																(. stack = StackPtr(new Stack(t->val)); .)
 ]
 ")"
 "{"
-{ 
-	ResourceDeclaration<stack>
+{
+	StackStatement<stack>
 }
 [
 	OutputDeclaration<stack>
@@ -358,6 +376,8 @@ ident 																(. mapping = MappingPtr(new Mapping(t->val)); .)
 	}
 "}"
 .
+
+
 
 Statement =															(. VariablePtr variable; .)
 																	(. StackPtr stack; .)
