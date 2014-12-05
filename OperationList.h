@@ -224,7 +224,12 @@ public:
 
 	virtual std::wstring getType(const Substitution& subs) const
 	{
-		return L"boolean";
+		if (expressions.size() > 0)
+		{
+			return L"boolean";
+		}
+
+		return firstExpr->getType(subs);
 	}
 };
 

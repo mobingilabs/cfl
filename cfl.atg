@@ -17,6 +17,7 @@
 #include "Mapping.h"
 #include "MappingCall.h"
 #include "OperationList.h"
+#include "TernaryExpression.h"
 
 #include "Variable.h"
 #include "Stack.h"
@@ -224,10 +225,18 @@ BinaryOperator<op> Term<rhs>										(. list->AddExpression(op, rhs); .)
 }
 .
 
+TernaryExpression<ExpressionPtr &expr> =							(. ExpressionPtr trueExpr, falseExpr; .)
+"?"
+Expression<trueExpr>
+":"
+Expression<falseExpr>												(. expr = ExpressionPtr(new class TernaryExpression(expr, trueExpr, falseExpr)); .)
+.
+
 Expression<ExpressionPtr &expr> = 
 Term<expr>
 [
-	InfixExpression<expr>
+	InfixExpression<expr> |
+	TernaryExpression<expr>
 ]
 .
 

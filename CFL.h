@@ -308,7 +308,7 @@ class CFL
 					}
 
 				}
-
+				
 				// Apply params
 				for (auto& propkv : res->getProperties())
 				{
@@ -335,7 +335,7 @@ class CFL
 				std::stack< std::shared_ptr<Expression> > conditions = res->getConditions();
 
 				std::stack< std::shared_ptr<Expression> > newOuterConditions = outerConditions;
-				
+
 				if (conditions.size() > 0)
 				{
 					std::shared_ptr<OperationList> ol(new OperationList(ctable, conditions.top()));
