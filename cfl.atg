@@ -62,6 +62,7 @@ CHARACTERS
 	lf        = '\n'.
 	tab       = '\t'.
 	underscore= '_'.
+	minus     = '-'.
 	colon	  = ':'.
 
 	stringCh  = ANY - '"' - '\\' - cr - lf.
@@ -74,7 +75,7 @@ CHARACTERS
 
 TOKENS
 	ident     = (letter | bigletter) { bigletter | letter | digit | underscore | colon colon }.
-	number    = digit { digit } [ "." digit { digit } ] .
+	number    = [minus] digit { digit } [ "." digit { digit } ] .
 
 	string    = '"' { stringCh | '\\' printable } '"'.
 	absimp    = '<' { stringCh | '\\' printable } '>'.

@@ -106,7 +106,7 @@ public:
 			return L"string";
 		}
 
-		return L"resource";
+		return L"string";
 	}
 };
 

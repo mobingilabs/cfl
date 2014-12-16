@@ -626,14 +626,14 @@ class CFL
 
 	}
 
-	std::string getDirFromFilename(std::wstring filename)
+	std::string getDirFromFilename(const std::wstring& filename)
 	{
 		// get current path
 		std::string mbFilename(filename.begin(), filename.end());
-		char result[PATH_MAX + 1];
-		std::string path = realpath(mbFilename.c_str(), result);
+		char result[PATH_MAX + 1] = {0};
+		realpath(mbFilename.c_str(), result);
+		std::string path = result;
 		std::string dir = path.substr(0, path.find_last_of("/"));
-
 		return dir;
 	}
 
@@ -670,13 +670,18 @@ class CFL
 
 		for (const StringLiteralPtr str : p.imports)
 		{
+			char originalDir[PATH_MAX + 1] = {0};
+			getcwd(originalDir, PATH_MAX);
+
 			chdir(getDirFromFilename(filename).c_str());
 			importFile(str->getContent(), stackMap, variableMap, mappingMap, ctable);
+
+			chdir(originalDir);
 		}
 
 		for (const StringLiteralPtr str : p.absoluteImports)
 		{
-			import(L"", stacks.getStack(str->getContent()), stackMap, variableMap, mappingMap, ctable);
+			//import(L"", stacks.getStack(str->getContent()), stackMap, variableMap, mappingMap, ctable);
 		}
 
 		for (const StackPtr stack : p.stacks)
