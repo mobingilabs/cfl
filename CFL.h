@@ -675,7 +675,6 @@ class CFL
 
 			chdir(getDirFromFilename(filename).c_str());
 			importFile(str->getContent(), stackMap, variableMap, mappingMap, ctable);
-
 			chdir(originalDir);
 		}
 
@@ -754,6 +753,8 @@ public:
 		}
 
 		importFile(wFilename, stackMap, variableMap, mappingMap, ctable);
+
+		chdir(getDirFromFilename(wFilename).c_str());
 
 		if (stackMap.find(stackName) == stackMap.end())
 		{
