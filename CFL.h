@@ -287,7 +287,9 @@ class CFL
 		{
 			std::wstring awsPrefix(L"AWS::");
 
-			subs.Add(res->getName(), SymbolReference(res->getName() + suffix).asJson(subs, false) );
+			subs.Add(res->getName(), 
+					SymbolReference(res->getName() + suffix).asJson(subs, false),
+					SymbolReference(res->getName() + suffix).asJson(subs, true) );
 
 			// Two cases: one is an AWS Resource, another is a stack
 			if ( stackMap.find(res->getType()) != stackMap.end() )
@@ -304,7 +306,9 @@ class CFL
 				{
 					if (paramkv.second->hasDefault())
 					{
-						newSubs.Add(paramkv.second->getName(), paramkv.second->getDefault()->asJson(subs));
+						newSubs.Add(paramkv.second->getName(), 
+							paramkv.second->getDefault()->asJson(subs, false),
+							paramkv.second->getDefault()->asJson(subs, true));
 					}
 
 				}
@@ -312,7 +316,9 @@ class CFL
 				// Apply params
 				for (auto& propkv : res->getProperties())
 				{
-					newSubs.Add(propkv.first, propkv.second->asJson(subs));
+					newSubs.Add(propkv.first, 
+						propkv.second->asJson(subs, false),
+						propkv.second->asJson(subs, true));
 				}
 
 				std::map< std::wstring, Info<ParameterPtr> > parameters;
@@ -373,7 +379,9 @@ class CFL
 				for (auto& outputkv : outputs)
 				{
 					std::wstring outputRef = res->getName() + L"." + outputkv.second.name;
-					subs.Add(outputRef, outputkv.second.item->asJson(newSubs));
+					subs.Add(outputRef, 
+						outputkv.second.item->asJson(newSubs, false),
+						outputkv.second.item->asJson(newSubs, true));
 					subs.AddTypeMapping(outputRef, outputkv.second.item->getType(newSubs));
 				}
 			}
@@ -610,8 +618,9 @@ class CFL
 
 			resourceList[kv.first] = picojson::value(resourceObject);
 
-
-			subs.Add(kv.second.name, SymbolReference(kv.first).asJson(subs, false) );
+			subs.Add(kv.second.name, 
+				SymbolReference(kv.first).asJson(subs, false),
+				SymbolReference(kv.first).asJson(subs, true));
 		}
 
 		for (auto& kv : outputs)
@@ -764,7 +773,9 @@ public:
 
 		for (auto kvpair : variableMap)
 		{
-			subs.Add(kvpair.first, kvpair.second->getExpr()->asJson(subs));
+			subs.Add(kvpair.first, 
+				kvpair.second->getExpr()->asJson(subs, false),
+				kvpair.second->getExpr()->asJson(subs, true));
 			subs.AddTypeMapping(kvpair.first, kvpair.second->getExpr()->getType(subs));
 		}
 

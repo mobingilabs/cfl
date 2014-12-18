@@ -81,6 +81,11 @@ public:
 		std::map<std::wstring, picojson::value> funcall;
 		std::vector<picojson::value> params;
 
+		if (funname.compare(L"Fn::Not") == 0 && lhs.is<bool>())
+		{
+			return picojson::value(!lhs.get<bool>());
+		}
+
 		params.push_back(lhs);
 
 		funcall[funname] = picojson::value(params);
@@ -91,6 +96,77 @@ public:
 	{
 		std::map<std::wstring, picojson::value> funcall;
 		std::vector<picojson::value> params;
+
+		if (funname.compare(L"Fn::And") == 0)
+		{
+			if (lhs.is<bool>() && rhs.is<bool>())
+			{
+				return picojson::value(lhs.get<bool>() && rhs.get<bool>());
+			}
+
+			std::shared_ptr<bool> val;
+			picojson::value other;
+
+			if (lhs.is<bool>())
+			{
+				val = std::make_shared<bool>(lhs.get<bool>());
+				other = rhs;
+			}
+
+			if (rhs.is<bool>())
+			{
+				val = std::make_shared<bool>(rhs.get<bool>());
+				other = lhs;
+			}
+
+			if (val)
+			{
+				if (*val == true)
+				{
+					return other;
+				}
+				else
+				{
+					return picojson::value(false);
+				}
+			}
+		}
+
+		if (funname.compare(L"Fn::Or") == 0)
+		{
+			if (lhs.is<bool>() && rhs.is<bool>())
+			{
+				return picojson::value(lhs.get<bool>() || rhs.get<bool>());
+			}
+
+			std::shared_ptr<bool> val;
+			picojson::value other;
+
+			if (lhs.is<bool>())
+			{
+				val = std::make_shared<bool>(lhs.get<bool>());
+				other = rhs;
+			}
+
+			if (rhs.is<bool>())
+			{
+				val = std::make_shared<bool>(rhs.get<bool>());
+				other = lhs;
+			}
+
+			if (val)
+			{
+				if (*val == true)
+				{
+					return picojson::value(true);
+				}
+				else
+				{
+					return other;
+				}
+			}
+		}
+
 
 		params.push_back(lhs);
 		params.push_back(rhs);

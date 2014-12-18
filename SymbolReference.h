@@ -25,7 +25,7 @@ public:
 	{
 		if (subs.HasSubstitute(symbolName))
 		{
-			return subs.Substitute(symbolName);
+			return subs.Substitute(symbolName, forConditionSection);
 		}
 		
 		std::map<std::wstring, picojson::value> obj;

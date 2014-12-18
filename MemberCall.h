@@ -32,14 +32,14 @@ public:
 		
 		if (subs.HasSubstitute(keyname)) 
 		{
-			return subs.Substitute(keyname);
+			return subs.Substitute(keyname, forConditionSection);
 		}
 
 		std::wstring resolvedName = record;
 
 		if (subs.HasSubstitute(record))
 		{
-			picojson::value sub = subs.Substitute(record);
+			picojson::value sub = subs.Substitute(record, forConditionSection);
 			if (sub.is<picojson::value::object>())
 			{
 				auto& obj = sub.get<picojson::value::object>();

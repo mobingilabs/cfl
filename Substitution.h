@@ -7,6 +7,7 @@
 class Substitution
 {
 	std::map<std::wstring, picojson::value> subs;
+	std::map<std::wstring, picojson::value> condSubs;
 	std::map<std::wstring, std::wstring> mappings;
 
 	std::map<std::wstring, std::wstring> symbolTypes;
@@ -20,15 +21,20 @@ public:
 
 	}
 
-	void Add(std::wstring str, picojson::value json)
+	void Add(std::wstring str, picojson::value json, picojson::value jsonForCondition)
 	{
 		subs[str] = json;
+		condSubs[str] = jsonForCondition;
 	}
 
-	picojson::value Substitute(std::wstring str) const
+	picojson::value Substitute(std::wstring str, bool forCondition) const
 	{
 		if (HasSubstitute(str))
 		{
+			if (forCondition)
+			{
+				return condSubs.find(str)->second;
+			}
 			return subs.find(str)->second;
 		}
 
