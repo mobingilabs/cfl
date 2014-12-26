@@ -426,6 +426,9 @@ class CFL
 
 		for (auto& kv : resources)
 		{
+
+			bool hasReasonToExist = true;
+
 			std::stack< std::shared_ptr<Expression> > conditions = kv.second.item->getConditions();
 			
 			std::map< std::wstring, MetadataPtr > dependencies;
@@ -474,10 +477,21 @@ class CFL
 					combinedConditions.pop();
 				}
 
+
 				picojson::value condJson = ol.asJson(subs, true);
 				picojson::object obj = condJson.get<picojson::object>();
 
 				resourceObject[L"Condition"] = obj[L"Condition"];
+
+				std::wcerr << kv.first << "-> " << obj[L"Condition"].serialize() << std::endl;
+
+				picojson::value condInternals = ctable->GetConditionByName(obj[L"Condition"].get<std::wstring>());
+
+				std::wcerr << kv.first << ": " << condInternals.serialize() << std::endl;
+				if (condInternals.is<bool>() && condInternals.get<bool>() == false)
+				{
+					hasReasonToExist = false;
+				}
 			}
 
 			resourceObject[L"Description"] = picojson::value(kv.second.name);
@@ -616,11 +630,14 @@ class CFL
 				resourceObject[L"Metadata"] = picojson::value(metadataObject);
 			}
 
-			resourceList[kv.first] = picojson::value(resourceObject);
+			if (hasReasonToExist)
+			{
+				resourceList[kv.first] = picojson::value(resourceObject);
 
-			subs.Add(kv.second.name, 
-				SymbolReference(kv.first).asJson(subs, false),
-				SymbolReference(kv.first).asJson(subs, true));
+				subs.Add(kv.second.name, 
+					SymbolReference(kv.first).asJson(subs, false),
+					SymbolReference(kv.first).asJson(subs, true));
+			}
 		}
 
 		for (auto& kv : outputs)

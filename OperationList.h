@@ -177,6 +177,17 @@ public:
 
 	int CommitToConditionTable(const Substitution& subs) const
 	{
+		auto resultingExpression = getConditionResult(subs);
+		return ctable->AddCondition(resultingExpression);
+	}
+
+	picojson::value getConditionResult(const Substitution& subs) const
+	{
+		if (expressions.size() == 0)
+		{
+			return firstExpr->asJson(subs, true);
+		}
+
 		std::vector< std::shared_ptr<Expression> > exprList;
 		std::vector< std::wstring > operators;
 
@@ -261,7 +272,7 @@ public:
 			resultingExpression = generateFuncCall(L"Fn::Or", exprList[0]->asJson(subs, true), exprList[1]->asJson(subs, true));
 		}
 
-		return ctable->AddCondition(resultingExpression);
+		return resultingExpression;
 	}
 
 	virtual picojson::value asJson(const Substitution& subs, bool forConditionSection) const 

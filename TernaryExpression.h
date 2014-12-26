@@ -33,13 +33,33 @@ public:
 
 		std::map<std::wstring, picojson::value> funcall;
 
-		std::vector<picojson::value> params;
 
-		params.push_back(condition->asJson(subs, true).get<picojson::object>()[L"Condition"]);
-		params.push_back(trueExpr->asJson(subs, forConditionSection));
-		params.push_back(falseExpr->asJson(subs, forConditionSection));
+		if (condition->asJson(subs, true).is<picojson::object>())
+		{
+			std::vector<picojson::value> params;
+			params.push_back(condition->asJson(subs, true).get<picojson::object>()[L"Condition"]);
+			params.push_back(trueExpr->asJson(subs, forConditionSection));
+			params.push_back(falseExpr->asJson(subs, forConditionSection));
+			funcall[L"Fn::If"] = picojson::value(params);
+		}
+		else if (condition->asJson(subs, true).is<bool>())
+		{
+			if (condition->asJson(subs, true).get<bool>())
+			{
+				trueExpr->asJson(subs, forConditionSection);
+			}
+			else
+			{
+				falseExpr->asJson(subs, forConditionSection);
+			}
+		}
+		else
+		{
+			std::wcerr << "Unknown kind of condition: " << condition->asJson(subs, true).serialize();
+			exit(EXIT_FAILURE);
+		}
 
-		funcall[L"Fn::If"] = picojson::value(params);
+
 
 		return picojson::value(funcall);
 	}

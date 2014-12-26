@@ -9,6 +9,14 @@ class ConditionsTable
 {
 	std::map<std::wstring, int> condToIdentifier;
 	std::vector< picojson::value > table; 
+
+	static std::wstring replace(std::wstring str, const std::wstring& from, const std::wstring& to) {
+		size_t start_pos = str.find(from);
+		if(start_pos == std::wstring::npos) { return str; }
+		str.replace(start_pos, from.length(), to);
+		return str;
+	}
+
 public:
 	ConditionsTable()
 	{
@@ -35,6 +43,13 @@ public:
 		std::wstringstream ss;
 		ss << "Condition" << cond;
 		return ss.str();
+	}
+
+	picojson::value GetConditionByName(std::wstring name) const
+	{
+		std::wstring str = replace(name, L"Condition", L"");
+		int num = std::stoi(str);
+		return table[num];
 	}
 
 };

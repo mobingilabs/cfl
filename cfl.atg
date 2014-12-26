@@ -387,8 +387,6 @@ ident 																(. mapping = MappingPtr(new Mapping(t->val)); .)
 "}"
 .
 
-
-
 Statement =															(. VariablePtr variable; .)
 																	(. StackPtr stack; .)
 																	(. MappingPtr mapping; .)

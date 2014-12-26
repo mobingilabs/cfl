@@ -1,9 +1,14 @@
 #!/bin/bash
+
 PWD=`pwd`
 OUTDIR=.temp
 OUTPUT=m.template
 
 ./build.sh && ./cfl $1 $2 | python -m json.tool | pygmentize -l javascript
 mkdir -p $OUTDIR
-./cfl $1 $2 > .temp/$OUTPUT
-aws cloudformation validate-template --template-body file://$PWD/$OUTDIR/$OUTPUT
+./cfl $1 $2 > test.template
+s3cmd put -f test.template s3://mocloud-dev-deployment-v1/templates/test.template
+
+aws cloudformation validate-template --template-url https://s3-ap-northeast-1.amazonaws.com/mocloud-dev-deployment-v1/templates/test.template
+
+ls -l test.template
