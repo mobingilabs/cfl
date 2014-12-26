@@ -45,6 +45,11 @@ public:
 		return ss.str();
 	}
 
+	picojson::value GetConditionByNum(int cond) const
+	{
+		return table[cond];
+	}
+
 	picojson::value GetConditionByName(std::wstring name) const
 	{
 		std::wstring str = replace(name, L"Condition", L"");

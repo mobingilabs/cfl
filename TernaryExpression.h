@@ -46,11 +46,11 @@ public:
 		{
 			if (condition->asJson(subs, true).get<bool>())
 			{
-				trueExpr->asJson(subs, forConditionSection);
+				return trueExpr->asJson(subs, forConditionSection);
 			}
 			else
 			{
-				falseExpr->asJson(subs, forConditionSection);
+				return falseExpr->asJson(subs, forConditionSection);
 			}
 		}
 		else
@@ -58,8 +58,6 @@ public:
 			std::wcerr << "Unknown kind of condition: " << condition->asJson(subs, true).serialize();
 			exit(EXIT_FAILURE);
 		}
-
-
 
 		return picojson::value(funcall);
 	}

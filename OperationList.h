@@ -286,6 +286,11 @@ public:
 
 		if (forConditionSection)
 		{
+			if (ctable->GetConditionByNum(cond).is<bool>())
+			{
+				return ctable->GetConditionByNum(cond);
+			};
+
 			std::map<std::wstring, picojson::value> condRef;
 			condRef[L"Condition"] = picojson::value(ctable->GetConditionName(cond));
 			return picojson::value(condRef);
@@ -294,14 +299,13 @@ public:
 		std::map<std::wstring, picojson::value> funcall;
 
 		std::vector<picojson::value> params;
-
 		params.push_back(picojson::value(ctable->GetConditionName(cond)));
 		params.push_back(picojson::value(true));
 		params.push_back(picojson::value(false));
 
 		funcall[L"Fn::If"] = picojson::value(params);
-
 		return picojson::value(funcall);
+
 	}
 
 	virtual ExpressionForm getForm() const

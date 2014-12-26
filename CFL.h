@@ -477,17 +477,19 @@ class CFL
 					combinedConditions.pop();
 				}
 
-
 				picojson::value condJson = ol.asJson(subs, true);
-				picojson::object obj = condJson.get<picojson::object>();
 
-				resourceObject[L"Condition"] = obj[L"Condition"];
+				picojson::value condInternals = condJson;
+				if (condJson.is<picojson::object>())
+				{
+					picojson::object obj = condJson.get<picojson::object>();
+					resourceObject[L"Condition"] = obj[L"Condition"];
 
-				std::wcerr << kv.first << "-> " << obj[L"Condition"].serialize() << std::endl;
+					//std::wcerr << kv.first << "-> " << obj[L"Condition"].serialize() << std::endl;
+					picojson::value condInternals = ctable->GetConditionByName(obj[L"Condition"].get<std::wstring>());
+				}
 
-				picojson::value condInternals = ctable->GetConditionByName(obj[L"Condition"].get<std::wstring>());
-
-				std::wcerr << kv.first << ": " << condInternals.serialize() << std::endl;
+				//std::wcerr << kv.first << ": " << condInternals.serialize() << std::endl;
 				if (condInternals.is<bool>() && condInternals.get<bool>() == false)
 				{
 					hasReasonToExist = false;
