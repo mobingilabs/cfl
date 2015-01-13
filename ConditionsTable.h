@@ -17,6 +17,9 @@ class ConditionsTable
 		return str;
 	}
 
+	const int TRUE_VALUE = -1;
+	const int FALSE_VALUE = -2;
+
 public:
 	ConditionsTable()
 	{
@@ -24,7 +27,13 @@ public:
 
 	int AddCondition(picojson::value cond)
 	{
+		if (cond.is<bool>())
+		{
+			return cond.get<bool>() ? TRUE_VALUE : FALSE_VALUE;
+		}
+
 		std::wstring key = cond.serialize();
+
 		if (condToIdentifier.find(key) == condToIdentifier.end())
 		{
 			table.push_back(cond);
@@ -40,6 +49,16 @@ public:
 
 	std::wstring GetConditionName(int cond) const
 	{
+		if (cond == TRUE_VALUE)
+		{
+			return L"true";
+		}
+
+		if (cond == FALSE_VALUE)
+		{
+			return L"false";
+		}
+
 		std::wstringstream ss;
 		ss << "Condition" << cond;
 		return ss.str();
@@ -47,11 +66,31 @@ public:
 
 	picojson::value GetConditionByNum(int cond) const
 	{
+		if (cond == TRUE_VALUE)
+		{
+			return picojson::value(true);
+		}
+
+		if (cond == FALSE_VALUE)
+		{
+			return picojson::value(false);
+		}
+
 		return table[cond];
 	}
 
 	picojson::value GetConditionByName(std::wstring name) const
 	{
+		if (name.compare(L"true") == 0)
+		{
+			return picojson::value(true);
+		}
+
+		if (name.compare(L"false") == 0)
+		{
+			return picojson::value(false);
+		}
+		
 		std::wstring str = replace(name, L"Condition", L"");
 		int num = std::stoi(str);
 		return table[num];
