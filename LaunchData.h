@@ -20,6 +20,7 @@ struct File
 {
 	std::wstring path;
 	std::wstring content;
+	std::wstring source;
 	std::wstring owner;
 	std::wstring group;
 	std::wstring mode;

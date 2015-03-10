@@ -214,8 +214,15 @@ class CFL
 					}
 					else if (info[L"Content"]->getForm() == FUNCTION_CALL )
 					{
-
 						file.content = info[L"Content"]->asJson(subs).get<std::wstring>();
+					}
+				}
+				else if (info.find(L"Source") != info.end())
+				{
+					if (info[L"Source"]->getForm() == STRING_LITERAL )
+					{
+						StringLiteral* lit = (StringLiteral*)info[L"Source"].get();
+						file.source = lit->getContent();
 					}
 				}
 
@@ -602,7 +609,16 @@ class CFL
 						{
 							std::map<std::wstring, picojson::value> fileobj;
 							File file = fileList[idx];
-							fileobj[L"content"] = picojson::value(file.content);
+
+							if (file.content.size() != 0)
+							{
+								fileobj[L"content"] = picojson::value(file.content);
+							}
+							else if (file.source.size() != 0)
+							{
+								fileobj[L"source"] = picojson::value(file.source);
+							}
+
 							if (file.owner.size() != 0)
 							{
 								fileobj[L"owner"] = picojson::value(file.owner);
