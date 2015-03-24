@@ -175,13 +175,13 @@ public:
 		return picojson::value(funcall);
 	}
 
-	int CommitToConditionTable(const Substitution& subs) const
+	int CommitToConditionTable(std::shared_ptr<Substitution> subs) const
 	{
 		auto resultingExpression = getConditionResult(subs);
 		return ctable->AddCondition(resultingExpression);
 	}
 
-	picojson::value getConditionResult(const Substitution& subs) const
+	picojson::value getConditionResult(std::shared_ptr<Substitution> subs) const
 	{
 		if (expressions.size() == 0)
 		{
@@ -275,7 +275,7 @@ public:
 		return resultingExpression;
 	}
 
-	virtual picojson::value asJson(const Substitution& subs, bool forConditionSection) const 
+	virtual picojson::value asJson(std::shared_ptr<Substitution> subs, bool forConditionSection) const
 	{
 		if (expressions.size() == 0)
 		{
@@ -313,7 +313,7 @@ public:
 		return OPERATION_LIST;
 	}
 
-	virtual std::wstring getType(const Substitution& subs) const
+	virtual std::wstring getType(std::shared_ptr<Substitution> subs) const
 	{
 		if (expressions.size() > 0)
 		{

@@ -17,7 +17,7 @@ public:
 	{
 	}
 
-	virtual picojson::value asJson(const Substitution& subs, bool forConditionSection) const 
+	virtual picojson::value asJson(std::shared_ptr<Substitution> subs, bool forConditionSection) const
 	{
 		if ( condition->getType(subs).compare(L"boolean") != 0 )
 		{
@@ -27,8 +27,8 @@ public:
 
 		if ( trueExpr->getType(subs).compare(falseExpr->getType(subs)) != 0 )
 		{
-			std::wcerr << "True and false results of the ternary (?:) expression must be of the same type." << std::endl;
-			exit(EXIT_FAILURE);
+			//std::wcerr << "True and false results of the ternary (?:) expression must be of the same type." << std::endl;
+			//exit(EXIT_FAILURE);
 		}
 
 		std::map<std::wstring, picojson::value> funcall;
@@ -67,7 +67,7 @@ public:
 		return TERNARY_EXPRESSION;
 	}
 
-	virtual std::wstring getType(const Substitution& subs) const 
+	virtual std::wstring getType(std::shared_ptr<Substitution> subs) const 
 	{
 		return trueExpr->getType(subs);
 	}

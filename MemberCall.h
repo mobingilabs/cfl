@@ -17,7 +17,7 @@ public:
 
 	}
 
-	virtual picojson::value asJson(const Substitution& subs, bool forConditionSection) const 
+	virtual picojson::value asJson(std::shared_ptr<Substitution> subs, bool forConditionSection) const
 	{
 
 		/*
@@ -30,16 +30,16 @@ public:
 
 		std::wstring keyname = record + L"." + member;
 		
-		if (subs.HasSubstitute(keyname)) 
+		if (subs->HasSubstitute(keyname))
 		{
-			return subs.Substitute(keyname, forConditionSection);
+			return subs->Substitute(keyname, forConditionSection);
 		}
 
 		std::wstring resolvedName = record;
 
-		if (subs.HasSubstitute(record))
+		if (subs->HasSubstitute(record))
 		{
-			picojson::value sub = subs.Substitute(record, forConditionSection);
+			picojson::value sub = subs->Substitute(record, forConditionSection);
 			if (sub.is<picojson::value::object>())
 			{
 				auto& obj = sub.get<picojson::value::object>();
@@ -67,16 +67,18 @@ public:
 		return MEMBER_CALL;
 	}
 
-	virtual std::wstring getType(const Substitution& subs) const
+	virtual std::wstring getType(std::shared_ptr<Substitution> subs) const
 	{
 		std::wstring keyname = record + L"." + member;
 
-		if (subs.HasTypeMapping(keyname)) 
+		if (subs->HasTypeMapping(keyname))
 		{
-			return subs.GetType(keyname);
+			return subs->GetType(keyname);
 		}
 
-		std::wcerr << keyname << " is not defined" << std::endl;
+		return L"string";
+
+		std::wcerr << "" << keyname << " is not defined" << std::endl;
 
 		exit(EXIT_FAILURE);
 	}

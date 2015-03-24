@@ -20,6 +20,17 @@ public:
 	{
 
 	}
+    
+    std::shared_ptr<Substitution> Clone() const
+    {
+        auto result = std::make_shared<Substitution>();
+        result->subs = subs;
+        result->condSubs = condSubs;
+        result->mappings = mappings;
+        result->symbolTypes = symbolTypes;
+        
+        return result;
+    }
 
 	void Add(std::wstring str, picojson::value json, picojson::value jsonForCondition)
 	{

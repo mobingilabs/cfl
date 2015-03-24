@@ -19,7 +19,7 @@ public:
 
 	}
 
-	virtual picojson::value asJson(const Substitution& subs, bool forConditionSection) const 
+	virtual picojson::value asJson(std::shared_ptr<Substitution> subs, bool forConditionSection) const
 	{
 		std::map<std::wstring, picojson::value> obj;
 
@@ -89,7 +89,7 @@ public:
 		return FUNCTION_CALL;
 	}
 
-	virtual std::wstring getType(const Substitution& subs) const
+	virtual std::wstring getType(std::shared_ptr<Substitution> subs) const
 	{
 		if (funcName.compare(L"In::GetFile") == 0)
 		{

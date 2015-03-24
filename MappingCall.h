@@ -18,14 +18,14 @@ public:
 
 	}
 
-	virtual picojson::value asJson(const Substitution& subs, bool forConditionSection) const 
+	virtual picojson::value asJson(std::shared_ptr<Substitution> subs, bool forConditionSection) const
 	{
 
 		/*
 		"Fn::FindInMap" : [ "Region2AZ", { "Ref" : "AWS::Region" }, "AZ" ]
 		*/
 		
-		if (subs.HasMapping(record)) 
+		if (subs->HasMapping(record))
 		{
 
 			std::map<std::wstring, picojson::value> obj;
@@ -51,7 +51,7 @@ public:
 		return MEMBER_CALL;
 	}
 
-	virtual std::wstring getType(const Substitution& subs) const
+	virtual std::wstring getType(std::shared_ptr<Substitution> subs) const
 	{
 		return L"string";
 	}

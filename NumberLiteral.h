@@ -12,7 +12,7 @@ public:
 	{
 	}
 
-	virtual picojson::value asJson(const Substitution& subs, bool forConditionSection) const 
+	virtual picojson::value asJson(std::shared_ptr<Substitution> subs, bool forConditionSection) const
 	{
 		return picojson::value(number);
 	}
@@ -22,7 +22,7 @@ public:
 		return NUMBER_LITERAL;
 	}
 
-	virtual std::wstring getType(const Substitution& subs) const
+	virtual std::wstring getType(std::shared_ptr<Substitution> subs) const
 	{
 		return L"number";
 	}

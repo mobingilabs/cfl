@@ -21,11 +21,11 @@ public:
 		return symbolName;
 	}
 	
-	virtual picojson::value asJson(const Substitution& subs, bool forConditionSection) const 
+	virtual picojson::value asJson(std::shared_ptr<Substitution> subs, bool forConditionSection) const
 	{
-		if (subs.HasSubstitute(symbolName))
+		if (subs->HasSubstitute(symbolName))
 		{
-			return subs.Substitute(symbolName, forConditionSection);
+			return subs->Substitute(symbolName, forConditionSection);
 		}
 		
 		std::map<std::wstring, picojson::value> obj;
@@ -40,11 +40,11 @@ public:
 		return SYMBOL_REFERENCE;
 	}
 
-	virtual std::wstring getType(const Substitution& subs) const
+	virtual std::wstring getType(std::shared_ptr<Substitution> subs) const
 	{
-		if (subs.HasTypeMapping(symbolName)) 
+		if (subs->HasTypeMapping(symbolName))
 		{
-			return subs.GetType(symbolName);
+			return subs->GetType(symbolName);
 		}
 
 		std::wcerr << "The symbol '" << symbolName << "' is not defined" << std::endl;

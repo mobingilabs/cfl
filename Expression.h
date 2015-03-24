@@ -6,6 +6,7 @@
 
 enum ExpressionForm
 {
+	NULL_LITERAL,
 	NUMBER_LITERAL,
 	STRING_LITERAL,
 	BOOLEAN_LITERAL,
@@ -21,9 +22,9 @@ enum ExpressionForm
 class Expression
 {
 public:
-	virtual picojson::value asJson(const Substitution& subs, bool forConditionSection = false) const = 0;
+	virtual picojson::value asJson(std::shared_ptr<Substitution> subs, bool forConditionSection = false) const = 0;
 	virtual ExpressionForm getForm() const = 0;
-	virtual std::wstring getType(const Substitution& subs) const = 0;
+    virtual std::wstring getType(std::shared_ptr<Substitution> subs) const = 0;
 };
 
 #endif // EXPRESSION_H

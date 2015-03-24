@@ -22,7 +22,7 @@ public:
 		fields.push_back(field);
 	}
 	
-	virtual picojson::value asJson(const Substitution& subs, bool forConditionSection) const 
+	virtual picojson::value asJson(std::shared_ptr<Substitution> subs, bool forConditionSection) const
 	{
 		std::map<std::wstring, picojson::value> obj;
 
@@ -39,7 +39,7 @@ public:
 		return RECORD_LITERAL;
 	}
 
-	virtual std::wstring getType(const Substitution& subs) const
+	virtual std::wstring getType(std::shared_ptr<Substitution> subs) const
 	{
 		return L"record";
 	}

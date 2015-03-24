@@ -88,7 +88,7 @@ class CFL
 		std::wstring stackName,
 		std::map<std::wstring, std::shared_ptr<Expression>> args, 
 		std::map<std::wstring, ParameterPtr> params,
-		const Substitution& subs)
+		std::shared_ptr<Substitution> subs)
 	{
 		// remove params that have been argumented
 		for (auto argkvpair : args)
@@ -138,16 +138,49 @@ class CFL
 	}
 
 	void applyMetadata(
+        std::wstring stackName,
 		const std::vector< MetadataPtr >& metadata,
 		std::map< std::wstring, MetadataPtr >& dependencies,
 		LaunchData& launchData,
-		Substitution& subs)
+		std::shared_ptr<Substitution> subs)
 	{
 		for (auto& meta : metadata)
 		{
 			if (meta->getKey().compare(L"DependsOn") == 0 && meta->getExpression()->getForm() == SYMBOL_REFERENCE)
 			{
-				std::wstring key = meta->getExpression()->asJson(subs).get<picojson::value::object>()[L"Ref"].get<std::wstring>();
+                std::shared_ptr<SymbolReference> sr = std::dynamic_pointer_cast<SymbolReference>(meta->getExpression());
+                std::wstring symbolName = sr->getSymbolName();
+                
+                picojson::value object = meta->getExpression()->asJson(subs);
+                
+                if (!object.is<picojson::value::object>())
+                {
+                    std::wcerr << "Dependency " << symbolName << " in " << stackName << " is not a resource (not object)" << std::endl;
+                    exit(EXIT_FAILURE);
+                }
+                
+                picojson::object refObject = object.get<picojson::value::object>();
+                
+                if (refObject.find(L"Ref") == refObject.end())
+                {
+                    for (auto a : refObject)
+                    {
+                        std::wcerr << a.first << std::endl;
+                    }
+                    
+                    std::wcerr << "Dependency " << symbolName << " in " << stackName << " is not a resource (no ref)" << std::endl;
+                    exit(EXIT_FAILURE);
+                }
+                
+                picojson::value referencedObject = refObject[L"Ref"];
+                
+                if (!referencedObject.is<std::wstring>())
+                {
+                    std::wcerr << "Dependency " << symbolName << " in " << stackName << " is not a resource" << std::endl;
+                    exit(EXIT_FAILURE);
+                }
+                
+				std::wstring key = referencedObject.get<std::wstring>();
 				dependencies[key] = meta;
 			}
 
@@ -275,7 +308,7 @@ class CFL
 		std::map<std::wstring, picojson::value>& resourceList,
 		std::map<std::wstring, picojson::value>& outputList,
 		const std::shared_ptr<Tables>& tables,
-		Substitution& subs,
+        std::shared_ptr<Substitution> subs,
 		ConditionsTablePtr ctable,
 		std::stack< std::shared_ptr<Expression> > outerConditions
 		)
@@ -287,21 +320,21 @@ class CFL
 			Info<ParameterPtr> paramInfo = {kv.first, stack, kv.second};
 			parameters[keyname] = paramInfo;
 
-			subs.AddTypeMapping(kv.first, kv.second->getType());
+			subs->AddTypeMapping(kv.first, kv.second->getType());
 		}
 
 		for (auto& res : stack->getResources())
 		{
 			std::wstring awsPrefix(L"AWS::");
 
-			subs.Add(res->getName(), 
+			subs->Add(res->getName(),
 					SymbolReference(res->getName() + suffix).asJson(subs, false),
 					SymbolReference(res->getName() + suffix).asJson(subs, true) );
 
 			// Two cases: one is an AWS Resource, another is a stack
 			if ( stackMap.find(res->getType()) != stackMap.end() )
 			{
-				Substitution newSubs = subs;
+				auto newSubs = subs->Clone();
 
 				StackPtr calledStack = stackMap[res->getType()];
 
@@ -313,7 +346,7 @@ class CFL
 				{
 					if (paramkv.second->hasDefault())
 					{
-						newSubs.Add(paramkv.second->getName(), 
+						newSubs->Add(paramkv.second->getName(),
 							paramkv.second->getDefault()->asJson(subs, false),
 							paramkv.second->getDefault()->asJson(subs, true));
 					}
@@ -323,7 +356,7 @@ class CFL
 				// Apply params
 				for (auto& propkv : res->getProperties())
 				{
-					newSubs.Add(propkv.first, 
+					newSubs->Add(propkv.first,
 						propkv.second->asJson(subs, false),
 						propkv.second->asJson(subs, true));
 				}
@@ -386,10 +419,10 @@ class CFL
 				for (auto& outputkv : outputs)
 				{
 					std::wstring outputRef = res->getName() + L"." + outputkv.second.name;
-					subs.Add(outputRef, 
+					subs->Add(outputRef,
 						outputkv.second.item->asJson(newSubs, false),
 						outputkv.second.item->asJson(newSubs, true));
-					subs.AddTypeMapping(outputRef, outputkv.second.item->getType(newSubs));
+					subs->AddTypeMapping(outputRef, outputkv.second.item->getType(newSubs));
 				}
 			}
 			else if (res->getType().compare(0, awsPrefix.size(), awsPrefix) == 0)
@@ -400,7 +433,7 @@ class CFL
 				Info<ResourcePtr> resInfo = {res->getName(), stack, res};
 				resources[keyname] = resInfo;
 
-				subs.AddTypeMapping(res->getName(), L"string");
+				subs->AddTypeMapping(res->getName(), L"string");
 			}
 			else
 			{
@@ -440,10 +473,12 @@ class CFL
 			
 			std::map< std::wstring, MetadataPtr > dependencies;
 			LaunchData launchData;
+            
+            
 
 			// Apply meta
-			applyMetadata(kv.second.item->getMetadata(), dependencies, launchData, subs);
-			applyMetadata(metadata, dependencies, launchData, subs);
+			applyMetadata(stack->getName(), kv.second.item->getMetadata(), dependencies, launchData, subs);
+			applyMetadata(stack->getName(), metadata, dependencies, launchData, subs);
 
 			// Build object
 			std::map<std::wstring, picojson::value> resourceObject;
@@ -652,7 +687,7 @@ class CFL
 			{
 				resourceList[kv.first] = picojson::value(resourceObject);
 
-				subs.Add(kv.second.name, 
+				subs->Add(kv.second.name,
 					SymbolReference(kv.first).asJson(subs, false),
 					SymbolReference(kv.first).asJson(subs, true));
 			}
@@ -756,7 +791,7 @@ public:
 		std::map< std::wstring, Info<ExpressionPtr> > outputs;
 		std::map< std::wstring, Info<ResourcePtr> > resources;
 
-		Substitution subs;
+        std::shared_ptr<Substitution> subs = std::make_shared<Substitution>();
 		ConditionsTablePtr ctable(new ConditionsTable());
 
 		std::wstring wFilename(filename.begin(), filename.end());
@@ -808,10 +843,10 @@ public:
 
 		for (auto kvpair : variableMap)
 		{
-			subs.Add(kvpair.first, 
+			subs->Add(kvpair.first,
 				kvpair.second->getExpr()->asJson(subs, false),
 				kvpair.second->getExpr()->asJson(subs, true));
-			subs.AddTypeMapping(kvpair.first, kvpair.second->getExpr()->getType(subs));
+			subs->AddTypeMapping(kvpair.first, kvpair.second->getExpr()->getType(subs));
 		}
 
 		if (mappingMap.size() != 0)
@@ -820,7 +855,7 @@ public:
 			for (auto kvpair : mappingMap)
 			{
 				mappingList[kvpair.first] = kvpair.second->asJson();
-				subs.AddMapping(kvpair.first);
+				subs->AddMapping(kvpair.first);
 			}
 			theTemplate[L"Mappings"] = picojson::value(mappingList);
 		}
