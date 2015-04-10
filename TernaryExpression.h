@@ -37,7 +37,25 @@ public:
 		if (condition->asJson(subs, true).is<picojson::object>())
 		{
 			std::vector<picojson::value> params;
-			params.push_back(condition->asJson(subs, true).get<picojson::object>()[L"Condition"]);
+
+			if (condition->asJson(subs, true).get<picojson::object>()[L"Condition"].is<picojson::null>())
+			{
+                if (condition->asJson(subs, true).get<picojson::object>()[L"Fn::If"].is<picojson::array>())
+                {
+                    params.push_back(condition->asJson(subs, true).get<picojson::object>()[L"Fn::If"].get<picojson::array>()[0]);
+                }
+                else
+                {
+                    std::wcout << "Unable to determine condition type" << std::endl;
+                    exit(1);
+                }
+			}
+            else
+            {
+                params.push_back(condition->asJson(subs, true).get<picojson::object>()[L"Condition"]);
+            }
+
+
 			params.push_back(trueExpr->asJson(subs, forConditionSection));
 			params.push_back(falseExpr->asJson(subs, forConditionSection));
 			funcall[L"Fn::If"] = picojson::value(params);
