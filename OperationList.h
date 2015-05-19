@@ -92,10 +92,34 @@ public:
 		return picojson::value(funcall);
 	}
 
+	static bool isLiteral(picojson::value expr)
+	{
+		if (expr.is<bool>() || expr.is<std::wstring>() || expr.is<double>())
+		{
+			return true;
+		}
+		return false;
+	}
+
 	picojson::value generateFuncCall(std::wstring funname, picojson::value lhs, picojson::value rhs) const
 	{
 		std::map<std::wstring, picojson::value> funcall;
 		std::vector<picojson::value> params;
+
+		//std::wcout << "EQUALS " << lhs.serialize() << " && " << rhs.serialize() << std::endl;
+		if (funname.compare(L"Fn::Equals") == 0 && 
+			isLiteral(lhs) && 
+			isLiteral(rhs))
+		{
+			if (lhs.serialize().compare(rhs.serialize()) == 0)
+			{
+				return picojson::value(true);
+			}
+			else
+			{
+				return picojson::value(false);
+			}
+		}
 
 		if (funname.compare(L"Fn::And") == 0)
 		{
