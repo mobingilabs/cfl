@@ -455,6 +455,7 @@ class CFL
 
 			parmInfo[L"Type"] = picojson::value(tables->convertToAwsType(kv.second.item->getType()));
 			parmInfo[L"Description"] = picojson::value(kv.first);
+			parmInfo[L"NoEcho"] = picojson::value(L"true");
 
 			if (kv.second.item->hasDefault())
 			{
