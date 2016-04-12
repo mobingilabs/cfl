@@ -528,8 +528,8 @@ private:
 	void Init() {
 		EOL    = '\n';
 		eofSym = 0;
-		maxT = 33;
-	noSym = 33;
+		maxT = 34;
+	noSym = 34;
 	int i;
 	for (i = 65; i <= 90; ++i) start.set(i, 1);
 	for (i = 97; i <= 122; ++i) start.set(i, 1);
@@ -560,11 +560,12 @@ private:
 	keywords.set(L"or", 22);
 	keywords.set(L"SET", 24);
 	keywords.set(L"MAKE", 26);
-	keywords.set(L"RETURN", 27);
-	keywords.set(L"if", 28);
-	keywords.set(L"STACK", 29);
-	keywords.set(L"MAPPING", 31);
-	keywords.set(L"IMPORT", 32);
+	keywords.set(L"REVEAL", 27);
+	keywords.set(L"RETURN", 28);
+	keywords.set(L"if", 29);
+	keywords.set(L"STACK", 30);
+	keywords.set(L"MAPPING", 32);
+	keywords.set(L"IMPORT", 33);
 
 
 		pos = -1; line = 1; col = 0; charPos = -1;
@@ -734,23 +735,23 @@ private:
 			else {goto case_0;}
 		case 22:
 			case_22:
-			recEnd = pos; recKind = 34;
+			recEnd = pos; recKind = 35;
 			if ((ch >= L'0' && ch <= L'9') || (ch >= L'a' && ch <= L'z')) {AddCh(); goto case_22;}
-			else {t->kind = 34; break;}
+			else {t->kind = 35; break;}
 		case 23:
 			case_23:
-			recEnd = pos; recKind = 35;
+			recEnd = pos; recKind = 36;
 			if ((ch >= L'-' && ch <= L'.') || (ch >= L'0' && ch <= L':') || (ch >= L'a' && ch <= L'z')) {AddCh(); goto case_23;}
-			else {t->kind = 35; break;}
+			else {t->kind = 36; break;}
 		case 24:
 			if ((ch >= L'0' && ch <= L'9')) {AddCh(); goto case_3;}
 			else if (ch == L'-') {AddCh(); goto case_17;}
 			else {goto case_0;}
 		case 25:
-			recEnd = pos; recKind = 34;
+			recEnd = pos; recKind = 35;
 			if ((ch >= L'0' && ch <= L'9')) {AddCh(); goto case_22;}
 			else if ((ch >= L'a' && ch <= L'z')) {AddCh(); goto case_29;}
-			else {t->kind = 34; break;}
+			else {t->kind = 35; break;}
 		case 26:
 			case_26:
 			recEnd = pos; recKind = 4;
@@ -773,11 +774,11 @@ private:
 			else {goto case_0;}
 		case 29:
 			case_29:
-			recEnd = pos; recKind = 34;
+			recEnd = pos; recKind = 35;
 			if ((ch >= L'0' && ch <= L'9')) {AddCh(); goto case_22;}
 			else if ((ch >= L'a' && ch <= L'z')) {AddCh(); goto case_29;}
 			else if (ch == L'=') {AddCh(); goto case_23;}
-			else {t->kind = 34; break;}
+			else {t->kind = 35; break;}
 		case 30:
 			case_30:
 			if (ch <= 9 || (ch >= 11 && ch <= 12) || (ch >= 14 && ch <= L',') || (ch >= L'.' && ch <= 65535)) {AddCh(); goto case_21;}
@@ -850,7 +851,7 @@ private:
 		case 48:
 			{t->kind = 23; break;}
 		case 49:
-			{t->kind = 30; break;}
+			{t->kind = 31; break;}
 		case 50:
 			recEnd = pos; recKind = 25;
 			if (ch == L'=') {AddCh(); goto case_45;}

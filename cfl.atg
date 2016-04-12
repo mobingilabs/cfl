@@ -301,9 +301,14 @@ ident																(. name = t->val; .)
 
 StackParameter<StackPtr stack> =									(. std::wstring type, name; .)
 																	(. ExpressionPtr expr; .)
+																	(. bool reveal = false; .)
 ident																(. type = t->val; .)
 ident																(. name = t->val; .)
-																	(. ParameterPtr ptr(new Parameter(name, type)); .)
+
+[
+	"REVEAL"														(. reveal = true; .)
+]
+																	(. ParameterPtr ptr(new Parameter(name, type, reveal)); .)
 																	(. stack->AddParameter(ptr); .)
 [
 	"="

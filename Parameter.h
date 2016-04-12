@@ -9,9 +9,10 @@ class Parameter
 	std::wstring name;
 	std::wstring type;
 	std::shared_ptr<Expression> expr;
+	bool reveal;
 
 public:
-	Parameter(std::wstring name, std::wstring type) : name(name), type(type)
+	Parameter(std::wstring name, std::wstring type, bool reveal) : name(name), type(type), reveal(reveal)
 	{
 
 	}
@@ -25,6 +26,13 @@ public:
 	{
 		return type;
 	}
+
+	bool getReveal() const
+	{
+		return reveal;
+	}
+
+
 
 	std::shared_ptr<Expression> getDefault() const
 	{

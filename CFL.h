@@ -146,42 +146,57 @@ class CFL
 	{
 		for (auto& meta : metadata)
 		{
-			if (meta->getKey().compare(L"DependsOn") == 0 && meta->getExpression()->getForm() == SYMBOL_REFERENCE)
+			if (meta->getKey().compare(L"DependsOn") == 0)
 			{
-                std::shared_ptr<SymbolReference> sr = std::dynamic_pointer_cast<SymbolReference>(meta->getExpression());
-                std::wstring symbolName = sr->getSymbolName();
-                
-                picojson::value object = meta->getExpression()->asJson(subs);
-                
-                if (!object.is<picojson::value::object>())
-                {
-                    std::wcerr << "Dependency " << symbolName << " in " << stackName << " is not a resource (not object)" << std::endl;
-                    exit(EXIT_FAILURE);
-                }
-                
-                picojson::object refObject = object.get<picojson::value::object>();
-                
-                if (refObject.find(L"Ref") == refObject.end())
-                {
-                    for (auto a : refObject)
-                    {
-                        std::wcerr << a.first << std::endl;
-                    }
-                    
-                    std::wcerr << "Dependency " << symbolName << " in " << stackName << " is not a resource (no ref)" << std::endl;
-                    exit(EXIT_FAILURE);
-                }
-                
-                picojson::value referencedObject = refObject[L"Ref"];
-                
-                if (!referencedObject.is<std::wstring>())
-                {
-                    std::wcerr << "Dependency " << symbolName << " in " << stackName << " is not a resource" << std::endl;
-                    exit(EXIT_FAILURE);
-                }
-                
-				std::wstring key = referencedObject.get<std::wstring>();
-				dependencies[key] = meta;
+				if (meta->getExpression()->getForm() == MEMBER_CALL)
+				{
+	                std::shared_ptr<MemberCall> sr = std::dynamic_pointer_cast<MemberCall>(meta->getExpression());
+	                
+	                picojson::value object = meta->getExpression()->asJson(subs);
+	                picojson::object refObject = object.get<picojson::value::object>();
+	                picojson::value referencedObject = refObject[L"Ref"];
+	              
+					std::wstring key = referencedObject.get<std::wstring>();
+					dependencies[key] = meta;
+				}
+
+				if (meta->getExpression()->getForm() == SYMBOL_REFERENCE)
+				{
+	                std::shared_ptr<SymbolReference> sr = std::dynamic_pointer_cast<SymbolReference>(meta->getExpression());
+	                std::wstring symbolName = sr->getSymbolName();
+	                
+	                picojson::value object = meta->getExpression()->asJson(subs);
+	                
+	                if (!object.is<picojson::value::object>())
+	                {
+	                    std::wcerr << "Dependency " << symbolName << " in " << stackName << " is not a resource (not object)" << std::endl;
+	                    exit(EXIT_FAILURE);
+	                }
+	                
+	                picojson::object refObject = object.get<picojson::value::object>();
+	                
+	                if (refObject.find(L"Ref") == refObject.end())
+	                {
+	                    for (auto a : refObject)
+	                    {
+	                        std::wcerr << a.first << std::endl;
+	                    }
+	                    
+	                    std::wcerr << "Dependency " << symbolName << " in " << stackName << " is not a resource (no ref)" << std::endl;
+	                    exit(EXIT_FAILURE);
+	                }
+	                
+	                picojson::value referencedObject = refObject[L"Ref"];
+	                
+	                if (!referencedObject.is<std::wstring>())
+	                {
+	                    std::wcerr << "Dependency " << symbolName << " in " << stackName << " is not a resource" << std::endl;
+	                    exit(EXIT_FAILURE);
+	                }
+	                
+					std::wstring key = referencedObject.get<std::wstring>();
+					dependencies[key] = meta;
+				}
 			}
 
 			if (meta->getKey().compare(L"Yum") == 0 && meta->getExpression()->getForm() == STRING_LITERAL)
@@ -326,6 +341,7 @@ class CFL
 		for (auto& res : stack->getResources())
 		{
 			std::wstring awsPrefix(L"AWS::");
+			std::wstring customPrefix(L"Custom::");
 
 			subs->Add(res->getName(),
 					SymbolReference(res->getName() + suffix).asJson(subs, false),
@@ -425,7 +441,9 @@ class CFL
 					subs->AddTypeMapping(outputRef, outputkv.second.item->getType(newSubs));
 				}
 			}
-			else if (res->getType().compare(0, awsPrefix.size(), awsPrefix) == 0)
+			else if (res->getType().compare(0, awsPrefix.size(), awsPrefix) == 0 ||
+					res->getType().compare(0, customPrefix.size(), customPrefix) == 0
+				)
 			{
 
 				std::wstring keyname = res->getName() + suffix;
@@ -455,7 +473,12 @@ class CFL
 
 			parmInfo[L"Type"] = picojson::value(tables->convertToAwsType(kv.second.item->getType()));
 			parmInfo[L"Description"] = picojson::value(kv.first);
-			parmInfo[L"NoEcho"] = picojson::value(L"true");
+
+
+			if (!kv.second.item->getReveal())
+			{
+				parmInfo[L"NoEcho"] = picojson::value(L"true");
+			}
 
 			if (kv.second.item->hasDefault())
 			{
